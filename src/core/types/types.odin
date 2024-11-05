@@ -161,6 +161,11 @@ FunctionDeclaration :: struct {
 	body:       ^BlockStatement, // The body of the function
 }
 
+ReturnStatement :: struct {
+	using stmt: Statement,
+	value:      []^Expression, // The value(s) to return from the function
+}
+
 // BlockStatement represents a block of statements enclosed in braces.
 // It contains a dynamic array of statements within the block.
 BlockStatement :: struct {

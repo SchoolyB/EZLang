@@ -6,10 +6,7 @@ import "../core/types"
 import "core:fmt"
 
 main :: proc() {
-	input := `y is "hello";
-	          x is 1;
-			  now y is "foobar";
-			  now x is 2;
+	input := `do function_name{}
 	`
 
 	// 	input := `ensure y is 10;
@@ -33,7 +30,7 @@ main :: proc() {
 			fmt.printfln("Token: Identifier found, Value: %v", lexer.get_identifier_name(l))
 		case .NUMBER, .STRING, .BOOLEAN, .FLOAT, .NOTHING:
 			fmt.printfln("Token: Literal found, Value: %v", lexer.get_current_token_literal(l))
-		case .ENSURE, .IS, .NOW, .PLUS, .MINUS, .TIMES, .DIVIDE:
+		case .DO, .ENSURE, .IS, .NOW, .PLUS, .MINUS, .TIMES, .DIVIDE:
 			fmt.printfln("Token: Keyword found, Value: %v ", lexer.get_current_token_literal(l))
 		case:
 			fmt.printfln("Token: Symbol found, Value: %v", lexer.get_current_token_literal(l))

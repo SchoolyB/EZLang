@@ -127,16 +127,21 @@ do functionName {
 }
 
 // With parameters, no return
-do functionName using (type param1, type param2) {
+do functionName with (type param1, type param2) {
     // code
 }
 
 // With parameters and return
-do functionName using (type param1) give returnType {
+do functionName with (type param1, type param2) -> returnType {
     // code
-    give returnValue;
+    return returnValue;
 }
 
+
+do int functionName with() {
+    // code
+    return 0;
+}
 ```
 
 ### Function Calls
@@ -161,14 +166,32 @@ result1, result2 is functionName with (param1, param2);
 number a is 5;
 number b is 10;
 
-do main() give number {
+do main() send number {
     result is add with (a, b);
     display(result);  // output: 20
+    send result;
 }
 
-do add using (number x, number y) number {
+do add with (number x, number y) send number {
     number total is x plus y;
 
-    give total;
+    if (total equals 15) {
+        total is now 20;
+    }
+
+    check (total) {
+        event 20:
+            display("Total is 20");
+            stop;
+        event 25:
+            display("Total is 25");
+            stop;
+    }
+
+    while (total lthan 20) {
+        total is now total plus 1;
+    }
+
+    send total;
 }
 ```

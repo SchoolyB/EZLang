@@ -63,6 +63,13 @@ next_token :: proc(lexicon: ^types.Lexer) -> types.Token {
 		token = .COMMA
 	case '.':
 		token = .DOT
+	case '-':
+		token = .MINUS
+		switch lexicon.ch {
+		case '>':
+			token = .GTHAN
+		//this combination will then handle a return statement
+		}
 	case 0:
 		lexicon.last_token = .EOF
 		return .EOF
@@ -182,6 +189,8 @@ get_current_token_literal :: proc(lexicon: ^types.Lexer) -> string {
 	#partial switch lexicon.last_token {
 	case .IDENTIFIER:
 		return lexicon.last_identifier
+	case .DO:
+		return "do"
 	case .ENSURE:
 		return "ensure"
 	case .NOW:

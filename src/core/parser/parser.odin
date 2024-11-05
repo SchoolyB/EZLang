@@ -4,6 +4,7 @@ import "../lexer"
 import "../types"
 import "core:fmt"
 import "core:strconv"
+import "core:strings"
 
 new_parser :: proc(lexicon: ^types.Lexer) -> ^types.Parser {
 	parser := new(types.Parser)
@@ -56,7 +57,6 @@ parse_statement :: proc(p: ^types.Parser) -> ^types.Statement {
 	}
 }
 parse_expression :: proc(parser: ^types.Parser) -> ^types.Expression {
-	// For now, just parse identifiers or literals
 	#partial switch parser.current_token {
 	case .IDENTIFIER:
 		return parse_identifier(parser)
@@ -205,6 +205,101 @@ parse_reassignment_statement :: proc(parser: ^types.Parser) -> ^types.Statement 
 
 }
 
+
+//functions are gonna be a bit fucky.
+parse_function_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
+	stmt := new(types.FunctionDeclaration)
+	stmt.token = parser.current_token //DO token
+	parser.current_token = lexer.next_token(parser.lexicon) //consume DO token
+
+	fmt.println("current_token after advancemt 1: ", parser.current_token)
+
+	//check if WITH keyword is used or not
+	if parser.current_token != .IDENTIFIER {
+		fmt.printf("Error: Expected identifier after 'do', got %v\n", parser.current_token)
+		return nil
+	}
+
+	//gets function name
+	stmt.name = lexer.get_identifier_name(parser.lexicon)
+	fmt.println("statement name: ", stmt.name)
+
+	parser.current_token = lexer.next_token(parser.lexicon)
+	fmt.println("current_token after advancemt 2: ", parser.current_token)
+	#partial switch (parser.current_token) {
+	case .LBRACE:
+		//no params
+		// stmt.body =
+		fmt.println("TEST")
+	case .WITH:
+		//params
+		parser.current_token = lexer.next_token(parser.lexicon)
+		#partial switch (parser.current_token) 
+		{
+		case .LPAREN:
+			//handle parameter stuff here
+
+			parser.current_token = lexer.next_token(parser.lexicon)
+			#partial switch (parser.current_token) 
+			{
+			case .RPAREN: //once the right paren token is encountered,
+			//params are done then evalaute if there is a return or not
+			}
+
+		}
+	// case:
+
+	}
+	//no params or return
+	// do function_name
+	// {
+	//
+	// }
+	//
+	// has params no return
+	// do function_name with (param)
+	// {
+	//
+	//
+	// }
+	//
+	// no params has return
+	// do function_name() -> return_type
+	// {
+	//
+	// }
+	//
+	// has params and return
+	// do function_name with (param) ->
+	// {
+	//
+	//
+	// }
+
+	if parser.current_token != .WITH {
+
+	}
+
+
+	return nil
+}
+
+parse_parameter_list :: proc(parser: ^types.Parser) -> ^types.Expression {
+	return nil
+}
+
+parse_return_type :: proc(parser: ^types.Parser) -> ^types.Statement {
+	return nil
+}
+
+parse_return_statement :: proc(parser: ^types.Parser) -> ^types.Statement {
+	return nil
+}
+
+parse_function_call :: proc(parser: ^types.Parser) -> ^types.Statement {
+	return nil
+}
+
 parse_if_statement :: proc(parser: ^types.Parser) -> ^types.Statement {
 	return nil
 }
@@ -213,12 +308,6 @@ parse_while_statement :: proc(parser: ^types.Parser) -> ^types.Statement {
 	return nil
 }
 
-//functions are gonna be a bit fucky.
-parse_function_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
-
-
-	return nil
-}
 
 parse_expression_statement :: proc(parser: ^types.Parser) -> ^types.Statement {
 	return nil
