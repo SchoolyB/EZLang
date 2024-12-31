@@ -13,10 +13,12 @@ Token :: enum {
 	TIMES, //*
 	DIVIDE, // /
 	MOD, // %
-	EQUALS, // =
-	NOT, // !
+	EQUAL, // ==
+	NEQUAL, // !=
 	GTHAN, // >
 	LTHAN, // <
+	GTHANEQ, // >=
+	LTHANEQ, // <=
 	AND, // &
 	OR, // ||
 	WHILE, // while

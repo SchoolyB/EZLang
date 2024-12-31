@@ -56,8 +56,8 @@ now x is 1;
 | nequal      | !=     | `x nequals y`      |
 | gthan       | >      | `x gthan y`           |
 | lthan       | <      | `x lthan y`           |
-| gthane | >= | `x gthane y` |
-| lthane | <= | `x lthane y` |
+| gthaneq | >= | `x gthane y` |
+| lthaneq | <= | `x lthane y` |
 
 ### Logical Operators
 | Keyword | Symbol | Example   |

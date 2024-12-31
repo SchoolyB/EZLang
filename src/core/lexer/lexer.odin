@@ -52,7 +52,7 @@ next_token :: proc(lexicon: ^types.Lexer) -> types.Token {
 	case '}':
 		token = .RBRACE
 	case '(':
-		token = .LPAREN
+		token = .LPAREN //todo: need to fix function declaration naming. lparen does currently only works when there is a space between the function name and the parenthesis
 	case ')':
 		token = .RPAREN
 	case '[':
