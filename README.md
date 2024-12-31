@@ -52,12 +52,12 @@ now x is 1;
 ### Comparison Operators
 | Keyword         | Symbol | Example               |
 | --------------- | ------ | --------------------- |
-| equals          | ==     | `x equals y`          |
-| not equals      | !=     | `x not equals y`      |
-| gthan           | >      | `x gthan y`           |
-| lthan           | <      | `x lthan y`           |
-| gthan or equals | >=     | `x gthan or equals y` |
-| lthan or equals | <=     | `x lthan or equals y` |
+| equal       | ==     | `x equal y`          |
+| nequal      | !=     | `x nequals y`      |
+| gthan       | >      | `x gthan y`           |
+| lthan       | <      | `x lthan y`           |
+| gthane | >= | `x gthane y` |
+| lthane | <= | `x lthane y` |
 
 ### Logical Operators
 | Keyword | Symbol | Example   |
@@ -122,23 +122,23 @@ check (variable) {
 ### Function Declaration
 ```
 // No parameters, no return
-do functionName {
+do functionName(){
     // code
 }
 
 // With parameters, no return
-do functionName with (type param1, type param2) {
+do functionName(type param1, type param2) {
     // code
 }
 
 // With parameters and return
-do functionName with (type param1, type param2) -> returnType {
+do functionName(type param1, type param2) returns returnType {
     // code
     return returnValue;
 }
 
 
-do int functionName with() {
+do int functionName() {
     // code
     return 0;
 }
@@ -150,13 +150,13 @@ do int functionName with() {
 functionName;
 
 // With parameters
-functionName with (param1, param2);
+functionName(param1, param2);
 
 // With return value
-result is functionName with (param1, param2);
+result is functionName(param1, param2);
 
 // Multiple return values
-result1, result2 is functionName with (param1, param2);
+result1, result2 is functionName(param1, param2);
 ```
 
 ## 7. Example Program
@@ -166,13 +166,13 @@ result1, result2 is functionName with (param1, param2);
 number a is 5;
 number b is 10;
 
-do main() send number {
+do main() returns number {
     result is add with (a, b);
     display(result);  // output: 20
-    send result;
+    return result;
 }
 
-do add with (number x, number y) send number {
+do add(number x, number y) returns number {
     number total is x plus y;
 
     if (total equals 15) {

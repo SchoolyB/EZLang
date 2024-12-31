@@ -215,6 +215,16 @@ get_current_token_literal :: proc(lexicon: ^types.Lexer) -> string {
 		return lexicon.last_string
 	case .QUOTE:
 		return fmt.tprintf("%c", lexicon.ch)
+	case .PLUS:
+		return "plus"
+	case .MINUS:
+		return "minus"
+	case .TIMES:
+		return "times"
+	case .DIVIDE:
+		return "divide"
+	case .MOD:
+		return "mod"
 	case:
 		// return fmt.tprintf("%c", lexicon.ch)
 		return "ERROR. INVALID TOKEN or TOKEN NOT APPLIED TO get_current_token_literal"
