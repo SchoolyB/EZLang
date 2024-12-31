@@ -6,11 +6,11 @@ import "../core/types"
 import "core:fmt"
 
 main :: proc() {
-	input := `do function_name{}
+	input := `do function_name (){};
 	`
 
-	// 	input := `ensure y is 10;
-	// `
+	// input := `ensure y is 10;
+	//
 
 	l := lexer.new_lexer(input)
 	p := parser.new_parser(l)

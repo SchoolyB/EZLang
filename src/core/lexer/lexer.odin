@@ -63,13 +63,6 @@ next_token :: proc(lexicon: ^types.Lexer) -> types.Token {
 		token = .COMMA
 	case '.':
 		token = .DOT
-	case '-':
-		token = .MINUS
-		switch lexicon.ch {
-		case '>':
-			token = .GTHAN
-		//this combination will then handle a return statement
-		}
 	case 0:
 		lexicon.last_token = .EOF
 		return .EOF
@@ -184,19 +177,29 @@ get_identifier_name :: proc(lexicon: ^types.Lexer) -> string {
 	return lexicon.last_identifier
 }
 
-
+//returns the literal value of the current token
 get_current_token_literal :: proc(lexicon: ^types.Lexer) -> string {
 	#partial switch lexicon.last_token {
 	case .IDENTIFIER:
 		return lexicon.last_identifier
-	case .DO:
-		return "do"
 	case .ENSURE:
-		return "ensure"
-	case .NOW:
-		return "now"
+		return "ensure" //constant declaration
 	case .IS:
-		return "is"
+		return "is" //variable declaration
+	case .NOW:
+		return "now" //reassignment
+	case .DO:
+		return "do" //function declaration
+	case .LPAREN:
+		return "("
+	case .RPAREN:
+		return ")"
+	case .LBRACE:
+		return "{"
+	case .RBRACE:
+		return "}"
+	case .SEMICOLON:
+		return ";"
 	case .NUMBER:
 		if lexicon.last_number == 0 {
 			return "Type 'number' or value '0'"
@@ -214,8 +217,9 @@ get_current_token_literal :: proc(lexicon: ^types.Lexer) -> string {
 		return fmt.tprintf("%c", lexicon.ch)
 	case:
 		// return fmt.tprintf("%c", lexicon.ch)
-		return "ERROR"
+		return "ERROR. INVALID TOKEN or TOKEN NOT APPLIED TO get_current_token_literal"
 	}
+
 }
 
 read_number :: proc(lexicon: ^types.Lexer) -> int {

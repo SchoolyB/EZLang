@@ -209,79 +209,88 @@ parse_reassignment_statement :: proc(parser: ^types.Parser) -> ^types.Statement 
 //functions are gonna be a bit fucky.
 parse_function_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 	stmt := new(types.FunctionDeclaration)
-	stmt.token = parser.current_token //DO token
-	parser.current_token = lexer.next_token(parser.lexicon) //consume DO token
+	stmt.token = parser.current_token // DO token
+	parser.current_token = lexer.next_token(parser.lexicon) // consume DO token
 
-	fmt.println("current_token after advancemt 1: ", parser.current_token)
-
-	//check if WITH keyword is used or not
+	// Parse function name
 	if parser.current_token != .IDENTIFIER {
 		fmt.printf("Error: Expected identifier after 'do', got %v\n", parser.current_token)
 		return nil
 	}
-
-	//gets function name
 	stmt.name = lexer.get_identifier_name(parser.lexicon)
-	fmt.println("statement name: ", stmt.name)
-
 	parser.current_token = lexer.next_token(parser.lexicon)
-	fmt.println("current_token after advancemt 2: ", parser.current_token)
-	#partial switch (parser.current_token) {
-	case .LBRACE:
-		//no params
-		// stmt.body =
-		fmt.println("TEST")
-	case .WITH:
-		//params
+	//if no params
+	if parser.current_token == .LPAREN {
 		parser.current_token = lexer.next_token(parser.lexicon)
-		#partial switch (parser.current_token) 
-		{
-		case .LPAREN:
-			//handle parameter stuff here
 
+		if parser.current_token == .RPAREN {
 			parser.current_token = lexer.next_token(parser.lexicon)
-			#partial switch (parser.current_token) 
-			{
-			case .RPAREN: //once the right paren token is encountered,
-			//params are done then evalaute if there is a return or not
-			}
-
+		} else {
+			fmt.printf("Error: Expected ')' after '(', got %v\n", parser.current_token)
+			return nil
 		}
-	// case:
-
-	}
-	//no params or return
-	// do function_name
-	// {
-	//
-	// }
-	//
-	// has params no return
-	// do function_name with (param)
-	// {
-	//
-	//
-	// }
-	//
-	// no params has return
-	// do function_name() -> return_type
-	// {
-	//
-	// }
-	//
-	// has params and return
-	// do function_name with (param) ->
-	// {
-	//
-	//
-	// }
-
-	if parser.current_token != .WITH {
-
 	}
 
 
-	return nil
+	// Check for parameters
+	if parser.current_token == .WITH {
+		parser.current_token = lexer.next_token(parser.lexicon) // consume WITH
+
+		if parser.current_token != .LPAREN {
+			fmt.printf("Error: Expected '(' after 'with', got %v\n", parser.current_token)
+			return nil
+		}
+		parser.current_token = lexer.next_token(parser.lexicon) // consume (
+
+		// Parse parameter list
+		parameters := make([dynamic]string)
+		for parser.current_token != .RPAREN {
+			if parser.current_token == .IDENTIFIER {
+				append(&parameters, lexer.get_identifier_name(parser.lexicon))
+				parser.current_token = lexer.next_token(parser.lexicon)
+
+				if parser.current_token == .COMMA {
+					parser.current_token = lexer.next_token(parser.lexicon)
+				}
+			} else {
+				fmt.printf("Error: Expected parameter identifier, got %v\n", parser.current_token)
+				return nil
+			}
+		}
+		stmt.parameters = parameters[:]
+		parser.current_token = lexer.next_token(parser.lexicon) // consume )
+	}
+
+	// Check for return type
+	if parser.current_token == .GTHAN { 	// -> token
+		parser.current_token = lexer.next_token(parser.lexicon)
+		// Parse return type
+		if parser.current_token != .IDENTIFIER {
+			fmt.printf("Error: Expected return type after '->', got %v\n", parser.current_token)
+			return nil
+		}
+		// Store return type if needed
+		parser.current_token = lexer.next_token(parser.lexicon)
+	}
+
+	// Parse function body
+	if parser.current_token != .LBRACE {
+		fmt.printf(
+			"Error: Expected %s after function declaration, got %v\n",
+			"'('",
+			parser.current_token,
+		)
+		return nil
+	}
+
+	// Parse the function body block
+	// stmt.body = parse_block_statement(parser)
+	// if stmt.body == nil {
+	//     return nil
+	// }
+
+	return stmt
+
 }
 
 parse_parameter_list :: proc(parser: ^types.Parser) -> ^types.Expression {
