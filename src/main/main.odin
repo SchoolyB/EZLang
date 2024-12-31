@@ -6,10 +6,12 @@ import "../core/types"
 import "core:fmt"
 
 main :: proc() {
-	input := `do function_name (){
-	ensure x is 10;
-	y is 20;
-	z is x plus y;
+	input := `do function_name ()returns number{
+	ensure number x is 10;
+	number y is 20;
+	number z is x plus y;
+
+	return z;
 	};
 	`
 

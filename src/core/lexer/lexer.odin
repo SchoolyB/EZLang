@@ -116,13 +116,15 @@ lookup_identifier :: proc(ident: string) -> types.Token {
 	case "mod":
 		return .MOD
 	case "equals":
-		return .EQUALS
-	case "not":
-		return .NOT
+		return .EQUAL
 	case "gthan":
 		return .GTHAN
 	case "lthan":
 		return .LTHAN
+	case "gthaneq":
+		return .GTHANEQ
+	case "lthaneq":
+		return .LTHANEQ
 	case "and":
 		return .AND
 	case "or":
@@ -159,6 +161,10 @@ lookup_identifier :: proc(ident: string) -> types.Token {
 		return .FLOAT
 	case "nothing":
 		return .NOTHING
+	case "return":
+		return .RETURN
+	case "returns":
+		return .RETURNS
 	case:
 		return .IDENTIFIER
 	}

@@ -19,7 +19,7 @@ Token :: enum {
 	LTHAN, // <
 	GTHANEQ, // >=
 	LTHANEQ, // <=
-	AND, // &
+	AND, // &&
 	OR, // ||
 	WHILE, // while
 	UNTIL, // same as a do while loop
@@ -31,6 +31,8 @@ Token :: enum {
 	EVENT, //case
 	STOP, //break
 	DO, //used do declare a function
+	RETURNS, //used to declare the return type of a function
+	RETURN, //used to return a value from a function
 	WITH, //used to declare a function parameter
 	GIVE, // same as return
 	//usual symbols
