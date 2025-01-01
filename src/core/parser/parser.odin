@@ -56,7 +56,38 @@ parse_statement :: proc(p: ^types.Parser) -> ^types.Statement {
 		return parse_expression_statement(p)
 	}
 }
+//parses infix expressions such as operators between two expressions
+//like 1 plus 2, 3 times 4, etc.
 parse_expression :: proc(parser: ^types.Parser) -> ^types.Expression {
+	left := parse_primary_expression(parser)
+	if left == nil {
+		return nil
+	}
+
+	// Check if there's an operator following
+	#partial switch parser.current_token {
+	case .PLUS, .MINUS, .TIMES, .DIVIDE, .MOD:
+		operator := parser.current_token
+		parser.current_token = lexer.next_token(parser.lexicon)
+
+		right := parse_primary_expression(parser)
+		if right == nil {
+			return nil
+		}
+
+		infix := new(types.InfixExpression)
+		infix.token = operator
+		infix.left = left
+		infix.right = right
+		infix.operator = lexer.get_current_token_literal(parser.lexicon)
+		return infix
+	}
+
+	return left
+}
+
+//parses primary expressions like identifiers, numbers, and strings
+parse_primary_expression :: proc(parser: ^types.Parser) -> ^types.Expression {
 	#partial switch parser.current_token {
 	case .IDENTIFIER:
 		return parse_identifier(parser)
@@ -69,7 +100,6 @@ parse_expression :: proc(parser: ^types.Parser) -> ^types.Expression {
 		return nil
 	}
 }
-
 //looks for and parses a variable declaration
 parse_variable_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 	stmt := new(types.VariableDeclaration)
@@ -262,25 +292,25 @@ parse_function_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 	}
 
 	// Check for return type
-	if parser.current_token == .RETURNS { 	//
+	if parser.current_token == .RETURNS {
 		parser.current_token = lexer.next_token(parser.lexicon)
+		stmt.returnStatment = new(types.ReturnStatement) //initialize return statement
+
 		// Parse return type
-		if parser.current_token != .IDENTIFIER {
+		#partial switch parser.current_token {
+		case .NUMBER, .STRING, .FLOAT, .BOOLEAN, .NOTHING:
+			stmt.returnStatment.type = lexer.get_type_name(parser.current_token)
+		case .IDENTIFIER:
 			fmt.printf(
-				"Error: Expected return type after 'returns', got %v\n",
+				"Error: Expected return type after 'returns', got identifier %v\n",
 				parser.current_token,
 			)
 			return nil
-		}
-		#partial switch parser.current_token {
-		case .NUMBER, .STRING, .FLOAT, .BOOLEAN, .NOTHING:
-			stmt.returnStatment.type = lexer.get_identifier_name(parser.lexicon)
 		case:
 			fmt.printf(
 				"Error: Expected return type after 'returns', got %v\n",
 				parser.current_token,
 			)
-			return nil
 		}
 		// Store return type if needed
 		parser.current_token = lexer.next_token(parser.lexicon)

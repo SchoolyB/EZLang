@@ -28,6 +28,22 @@ read_char :: proc(lexicon: ^types.Lexer) {
 	lexicon.read_position += 1
 }
 
+get_type_name :: proc(token: types.Token) -> string {
+	#partial switch token {
+	case .NUMBER:
+		return "number"
+	case .STRING:
+		return "string"
+	case .FLOAT:
+		return "float"
+	case .BOOLEAN:
+		return "boolean"
+	case .NOTHING:
+		return "nothing"
+	case:
+		return ""
+	}
+}
 
 next_token :: proc(lexicon: ^types.Lexer) -> types.Token {
 	using types
