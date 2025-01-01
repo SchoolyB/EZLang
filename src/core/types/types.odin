@@ -159,14 +159,16 @@ WhileStatement :: struct {
 // FunctionDeclaration represents a function definition.
 // It includes the function name, parameters, and body.
 FunctionDeclaration :: struct {
-	using stmt: Statement,
-	name:       string, // The name of the function
-	parameters: []string, // An array of parameter names
-	body:       ^BlockStatement, // The body of the function
+	using stmt:     Statement,
+	name:           string, // The name of the function
+	parameters:     []string, // An array of parameter names
+	body:           ^BlockStatement, // The body of the function
+	returnStatment: ^ReturnStatement, // The return statement of the function
 }
 
 ReturnStatement :: struct {
 	using stmt: Statement,
+	type:       string, // The type of the return value
 	value:      []^Expression, // The value(s) to return from the function
 }
 

@@ -262,11 +262,24 @@ parse_function_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 	}
 
 	// Check for return type
-	if parser.current_token == .GTHAN { 	// -> token
+	if parser.current_token == .RETURNS { 	//
 		parser.current_token = lexer.next_token(parser.lexicon)
 		// Parse return type
 		if parser.current_token != .IDENTIFIER {
-			fmt.printf("Error: Expected return type after '->', got %v\n", parser.current_token)
+			fmt.printf(
+				"Error: Expected return type after 'returns', got %v\n",
+				parser.current_token,
+			)
+			return nil
+		}
+		#partial switch parser.current_token {
+		case .NUMBER, .STRING, .FLOAT, .BOOLEAN, .NOTHING:
+			stmt.returnStatment.type = lexer.get_identifier_name(parser.lexicon)
+		case:
+			fmt.printf(
+				"Error: Expected return type after 'returns', got %v\n",
+				parser.current_token,
+			)
 			return nil
 		}
 		// Store return type if needed
