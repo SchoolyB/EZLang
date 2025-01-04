@@ -9,29 +9,45 @@ import "core:strings"
 new_parser :: proc(lexicon: ^types.Lexer) -> ^types.Parser {
 	parser := new(types.Parser)
 	parser.lexicon = lexicon
-	// Only read the first token, we'll get peek_token when needed
+
+	// Read the first two tokens
 	parser.current_token = lexer.next_token(parser.lexicon)
 	parser.peek_token = lexer.next_token(parser.lexicon)
-	// Reset back to the first token
+
+	// Reset lexer state completely
 	parser.lexicon.position = 0
 	parser.lexicon.read_position = 0
-	// read_char(parser.lexicon)
+	parser.lexicon.ch = 0
+	if len(parser.lexicon.input) > 0 {
+		parser.lexicon.ch = parser.lexicon.input[0]
+	}
+
+	// Re-read first token to get back to starting position
 	parser.current_token = lexer.next_token(parser.lexicon)
+
 	return parser
 }
-
 
 //parses the entire program
 parse_program :: proc(p: ^types.Parser) -> ^types.Program {
 	program := new(types.Program)
 	program.statements = make([dynamic]^types.Statement)
 
+	fmt.println("DEBUG: Starting program parse")
 	for p.current_token != .EOF {
+		fmt.printf("DEBUG: Processing token: %v\n", p.current_token)
 		stmt := parse_statement(p)
 		if stmt != nil {
 			append(&program.statements, stmt)
+			fmt.println("DEBUG: Statement added successfully")
+		} else {
+			fmt.println("DEBUG: Statement was nil")
 		}
-		p.current_token = lexer.next_token(p.lexicon)
+		// Only advance token if it wasn't already advanced by the statement parser
+		if p.current_token != .EOF {
+			p.current_token = lexer.next_token(p.lexicon)
+			fmt.printf("DEBUG: Advanced to next token: %v\n", p.current_token)
+		}
 	}
 
 	return program
@@ -39,8 +55,15 @@ parse_program :: proc(p: ^types.Parser) -> ^types.Program {
 //parses a statement
 parse_statement :: proc(p: ^types.Parser) -> ^types.Statement {
 	#partial switch p.current_token {
-	case .IS:
-		return parse_variable_declaration(p)
+	case .DO:
+		fmt.println("Function declaration found") //debugging
+		fmt.println("p: ", p) //debugging
+		return parse_function_declaration(p)
+	case .NUMBER, .STRING, .FLOAT, .BOOLEAN, .NOTHING, .IS:
+		// fmt.println("p: ", p) //debugging
+		if !p.in_function {
+			return parse_variable_declaration(p)
+		}
 	case .ENSURE:
 		// fmt.println("p: ", p) //debugging
 		return parse_constant_declaration(p)
@@ -50,11 +73,10 @@ parse_statement :: proc(p: ^types.Parser) -> ^types.Statement {
 		return parse_if_statement(p)
 	case .WHILE:
 		return parse_while_statement(p)
-	case .DO:
-		return parse_function_declaration(p)
 	case:
 		return parse_expression_statement(p)
 	}
+	return nil
 }
 //parses infix expressions such as operators between two expressions
 //like 1 plus 2, 3 times 4, etc.
@@ -94,6 +116,7 @@ parse_primary_expression :: proc(parser: ^types.Parser) -> ^types.Expression {
 	case .NUMBER:
 		return parse_number_literal(parser)
 	case .STRING:
+		fmt.println("string literal primary expression found") //debugging
 		return parse_string_literal(parser)
 	case:
 		// Handle error: unexpected token
@@ -101,38 +124,64 @@ parse_primary_expression :: proc(parser: ^types.Parser) -> ^types.Expression {
 	}
 }
 //looks for and parses a variable declaration
+//Variables can be declare in many ways.
+//1 - Explicitly typed without a value assigned`number x;`
+//2 - Typed or untyped with a value assigned `number x is 10;` or `x is 10;`
+//3 - Declared before hand then re-assigned later `number x; x is 10;` or `number x is; now x is 10;`
+//4 - Declared as a constant `ensure x is 10;`
 parse_variable_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 	stmt := new(types.VariableDeclaration)
 	stmt.token = parser.current_token
 
-	parser.current_token = lexer.next_token(parser.lexicon) // Consume 'IS' token might need to delete this
+	fmt.printf("DEBUG: Starting variable declaration with token: %v\n", parser.current_token)
 
-	if parser.current_token != .IDENTIFIER {
-		return nil
+	// Handle type-first declarations
+	if parser.current_token == .NUMBER ||
+	   parser.current_token == .STRING ||
+	   parser.current_token == .FLOAT ||
+	   parser.current_token == .BOOLEAN ||
+	   parser.current_token == .NOTHING {
+		stmt.type = lexer.get_type_name(parser.current_token)
+		parser.current_token = lexer.next_token(parser.lexicon)
+		fmt.printf("DEBUG: After type token, current token is: %v\n", parser.current_token)
+
+		// After type, expect identifier
+		if parser.current_token != .IDENTIFIER {
+			fmt.printf("Error: Expected identifier after type, got %v\n", parser.current_token)
+			return nil
+		}
+
+		stmt.name = lexer.get_identifier_name(parser.lexicon)
+		parser.current_token = lexer.next_token(parser.lexicon)
+		fmt.printf("DEBUG: After identifier, current token is: %v\n", parser.current_token)
+
+		// Expect IS
+		if parser.current_token != .IS {
+			fmt.printf("Error: Expected 'IS' after identifier, got %v\n", parser.current_token)
+			return nil
+		}
+
+		parser.current_token = lexer.next_token(parser.lexicon)
+		fmt.printf("DEBUG: After IS token, current token is: %v\n", parser.current_token)
+
+		// Parse the expression after IS
+		stmt.value = parse_expression(parser)
+		if stmt.value == nil {
+			fmt.println("Error: Invalid expression")
+			return nil
+		}
+
+		// Handle semicolon
+		if parser.current_token == .SEMICOLON {
+			parser.current_token = lexer.next_token(parser.lexicon)
+			fmt.printf("DEBUG: After semicolon, current token is: %v\n", parser.current_token)
+		}
+
+		return stmt
 	}
 
-	stmt.name = lexer.get_identifier_name(parser.lexicon)
-	parser.current_token = lexer.next_token(parser.lexicon) // Consume identifier
-
-	if parser.current_token != .IS {
-		fmt.printf("Error: Expected 'IS', got %v\n", parser.current_token)
-		return nil
-	}
-
-	parser.current_token = lexer.next_token(parser.lexicon) // Consume 'IS' token
-
-	stmt.value = parse_expression(parser)
-	if stmt.value == nil {
-		fmt.println("Error: Invalid expression")
-		return nil
-	}
-
-	if parser.peek_token == .SEMICOLON {
-		fmt.println("semicolon found")
-		parser.current_token = lexer.next_token(parser.lexicon) // Consume semicolon
-	}
-
-	return stmt
+	fmt.printf("Error: Expected type declaration, got %v\n", parser.current_token)
+	return nil
 }
 
 //handles parsing constant declarations with/without explicit types.
@@ -249,91 +298,65 @@ parse_function_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 	}
 	stmt.name = lexer.get_identifier_name(parser.lexicon)
 	parser.current_token = lexer.next_token(parser.lexicon)
-	//if no params
+
+	// Handle parameters
 	if parser.current_token == .LPAREN {
 		parser.current_token = lexer.next_token(parser.lexicon)
-
-		if parser.current_token == .RPAREN {
-			parser.current_token = lexer.next_token(parser.lexicon)
-		} else {
-			fmt.printf("Error: Expected ')' after '(', got %v\n", parser.current_token)
-			return nil
+		if parser.current_token != .RPAREN {
+			// Parse parameter list if needed
+			// ... parameter parsing code ...
 		}
-	}
-
-
-	// Check for parameters
-	if parser.current_token == .WITH {
-		parser.current_token = lexer.next_token(parser.lexicon) // consume WITH
-
-		if parser.current_token != .LPAREN {
-			fmt.printf("Error: Expected '(' after 'with', got %v\n", parser.current_token)
-			return nil
-		}
-		parser.current_token = lexer.next_token(parser.lexicon) // consume (
-
-		// Parse parameter list
-		parameters := make([dynamic]string)
-		for parser.current_token != .RPAREN {
-			if parser.current_token == .IDENTIFIER {
-				append(&parameters, lexer.get_identifier_name(parser.lexicon))
-				parser.current_token = lexer.next_token(parser.lexicon)
-
-				if parser.current_token == .COMMA {
-					parser.current_token = lexer.next_token(parser.lexicon)
-				}
-			} else {
-				fmt.printf("Error: Expected parameter identifier, got %v\n", parser.current_token)
-				return nil
-			}
-		}
-		stmt.parameters = parameters[:]
 		parser.current_token = lexer.next_token(parser.lexicon) // consume )
 	}
 
-	// Check for return type
+	// Handle return type
 	if parser.current_token == .RETURNS {
 		parser.current_token = lexer.next_token(parser.lexicon)
-		stmt.returnStatment = new(types.ReturnStatement) //initialize return statement
+		stmt.returnStatment = new(types.ReturnStatement)
 
-		// Parse return type
 		#partial switch parser.current_token {
 		case .NUMBER, .STRING, .FLOAT, .BOOLEAN, .NOTHING:
 			stmt.returnStatment.type = lexer.get_type_name(parser.current_token)
-		case .IDENTIFIER:
-			fmt.printf(
-				"Error: Expected return type after 'returns', got identifier %v\n",
-				parser.current_token,
-			)
-			return nil
+			parser.current_token = lexer.next_token(parser.lexicon)
 		case:
 			fmt.printf(
 				"Error: Expected return type after 'returns', got %v\n",
 				parser.current_token,
 			)
+			return nil
 		}
-		// Store return type if needed
-		parser.current_token = lexer.next_token(parser.lexicon)
 	}
 
 	// Parse function body
 	if parser.current_token != .LBRACE {
 		fmt.printf(
-			"Error: Expected %s after function declaration, got %v\n",
-			"'('",
+			"Error: Expected '{' after function declaration, got %v\n",
 			parser.current_token,
 		)
 		return nil
 	}
+	parser.in_function = true
+	parser.current_token = lexer.next_token(parser.lexicon) // consume {
 
-	// Parse the function body block
-	// stmt.body = parse_block_statement(parser)
-	// if stmt.body == nil {
-	//     return nil
-	// }
+	// Parse statements in function body
+	body_statements := make([dynamic]^types.BlockStatement)
+	for parser.current_token != .RBRACE && parser.current_token != .EOF {
+		stmt := parse_statement(parser)
+		if stmt != nil {
+			// Create a new BlockStatement to wrap the regular statement
+			block_stmt := new(types.BlockStatement)
+			block_stmt.statements = make([dynamic]^types.Statement)
+			append(&block_stmt.statements, stmt)
+			append(&body_statements, block_stmt)
+		}
+	}
+	parser.in_function = false
+	if parser.current_token == .RBRACE {
+		parser.current_token = lexer.next_token(parser.lexicon) // consume }
+	}
 
+	stmt.body = body_statements[:]
 	return stmt
-
 }
 
 parse_parameter_list :: proc(parser: ^types.Parser) -> ^types.Expression {

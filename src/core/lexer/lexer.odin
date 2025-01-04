@@ -222,6 +222,10 @@ get_current_token_literal :: proc(lexicon: ^types.Lexer) -> string {
 		return "}"
 	case .SEMICOLON:
 		return ";"
+	case .RETURN:
+        return "return"
+    case .RETURNS:
+        return "returns"
 	case .NUMBER:
 		if lexicon.last_number == 0 {
 			return "Type 'number' or value '0'"

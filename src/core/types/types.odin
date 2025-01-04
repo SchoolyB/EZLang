@@ -87,8 +87,9 @@ Parser :: struct {
 	lexicon:         ^Lexer, // Pointer to the Lexer, used to get tokens
 	current_token:   Token, // The current token being processed
 	peek_token:      Token, // The next token, used for lookahead
-	last_identifier: string, // Add this field
-	last_string:     string, // Add this field
+	last_identifier: string, // Add this field???
+	last_string:     string, // Add this field???
+	in_function:     bool, // flag to indicate if we are in a function.
 }
 
 // Node is the base struct for all AST nodes.
@@ -120,6 +121,7 @@ Program :: struct {
 VariableDeclaration :: struct {
 	using stmt: Statement,
 	name:       string, // The name of the variable being declared
+	type:       string, // The type of the variable being declared
 	value:      ^Expression, // The initial value of the variable (as an expression)
 }
 
@@ -162,7 +164,7 @@ FunctionDeclaration :: struct {
 	using stmt:     Statement,
 	name:           string, // The name of the function
 	parameters:     []string, // An array of parameter names
-	body:           ^BlockStatement, // The body of the function
+	body:           []^BlockStatement, // The body of the function
 	returnStatment: ^ReturnStatement, // The return statement of the function
 }
 
