@@ -56,12 +56,11 @@ parse_program :: proc(p: ^types.Parser) -> ^types.Program {
 parse_statement :: proc(p: ^types.Parser) -> ^types.Statement {
 	#partial switch p.current_token {
 	case .DO:
-		fmt.println("Function declaration found") //debugging
-		fmt.println("p: ", p) //debugging
+		// fmt.println("p: ", p) //debugging
 		return parse_function_declaration(p)
 	case .NUMBER, .STRING, .FLOAT, .BOOLEAN, .NOTHING, .IS:
 		// fmt.println("p: ", p) //debugging
-		if !p.in_function {
+		if p.in_function {
 			return parse_variable_declaration(p)
 		}
 	case .ENSURE:

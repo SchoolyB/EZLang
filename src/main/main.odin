@@ -8,6 +8,8 @@ import "core:fmt"
 main :: proc() {
 	input := `do function_name () returns string {
 
+	number z is 10;
+	string x is "hello";
 	};`
 
 	//constant test
@@ -26,16 +28,16 @@ main :: proc() {
 
 	// Print all tokens for debugging
 	l = lexer.new_lexer(input)
-	// for token := lexer.next_token(l); token != .EOF; token = lexer.next_token(l) {
-	// 	#partial switch token {
-	// 	case .IDENTIFIER:
-	// 		fmt.printfln("Token: Identifier found, Value: %v", lexer.get_identifier_name(l))
-	// 	case .NUMBER, .STRING, .BOOLEAN, .FLOAT, .NOTHING:
-	// 		fmt.printfln("Token: Literal found, Value: %v", lexer.get_current_token_literal(l))
-	// 	case .DO, .ENSURE, .IS, .NOW, .PLUS, .MINUS, .TIMES, .DIVIDE:
-	// 		fmt.printfln("Token: Keyword found, Value: %v ", lexer.get_current_token_literal(l))
-	// 	case:
-	// 		fmt.printfln("Token: Symbol found, Value: %v", lexer.get_current_token_literal(l))
-	// 	}
-	// }
+	for token := lexer.next_token(l); token != .EOF; token = lexer.next_token(l) {
+		#partial switch token {
+		case .IDENTIFIER:
+			fmt.printfln("Token: Identifier found, Value: %v", lexer.get_identifier_name(l))
+		case .NUMBER, .STRING, .BOOLEAN, .FLOAT, .NOTHING:
+			fmt.printfln("Token: Literal found, Value: %v", lexer.get_current_token_literal(l))
+		case .DO, .ENSURE, .IS, .NOW, .PLUS, .MINUS, .TIMES, .DIVIDE:
+			fmt.printfln("Token: Keyword found, Value: %v ", lexer.get_current_token_literal(l))
+		case:
+			fmt.printfln("Token: Symbol found, Value: %v", lexer.get_current_token_literal(l))
+		}
+	}
 }
