@@ -123,15 +123,17 @@ VariableDeclaration :: struct {
 	name:       string, // The name of the variable being declared
 	type:       string, // The type of the variable being declared
 	value:      ^Expression, // The initial value of the variable (as an expression)
+	is_const:   bool, // Flag to indicate if the variable is a constant
 }
 
-// ConstantDeclaration represents a constant declaration statement.
-// It includes the constant name and its value.
-ConstantDeclaration :: struct {
-	using stmt: Statement,
-	name:       string, // The name of the constant being declared
-	value:      ^Expression, // The value of the constant (as an expression)
-}
+//commented out for now because the is_const flag was added in the VariableDeclaration struct
+// // ConstantDeclaration represents a constant declaration statement.
+// // It includes the constant name and its value.
+// ConstantDeclaration :: struct {
+// 	using stmt: Statement,
+// 	name:       string, // The name of the constant being declared
+// 	value:      ^Expression, // The value of the constant (as an expression)
+// }
 
 // ReassignmentStatement represents a variable reassignment statement.
 // It includes the variable name and the new value being assigned.

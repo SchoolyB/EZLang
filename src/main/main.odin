@@ -6,15 +6,9 @@ import "../core/types"
 import "core:fmt"
 
 main :: proc() {
-	input := `do function_name () returns string {
-
-	number z is 10;
-	string x is "hello";
+	input := `do main () returns number {}
 	};`
 
-	//constant test
-	// input := `ensure y is 10;
-	//
 
 	l := lexer.new_lexer(input)
 	p := parser.new_parser(l)

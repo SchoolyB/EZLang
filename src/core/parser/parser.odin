@@ -35,7 +35,7 @@ parse_program :: proc(p: ^types.Parser) -> ^types.Program {
 
 	fmt.println("DEBUG: Starting program parse")
 	for p.current_token != .EOF {
-		fmt.printf("DEBUG: Processing token: %v\n", p.current_token)
+		// fmt.printf("DEBUG: Processing token: %v\n", p.current_token)
 		stmt := parse_statement(p)
 		if stmt != nil {
 			append(&program.statements, stmt)
@@ -60,11 +60,10 @@ parse_statement :: proc(p: ^types.Parser) -> ^types.Statement {
 		return parse_function_declaration(p)
 	case .NUMBER, .STRING, .FLOAT, .BOOLEAN, .NOTHING, .IS:
 		// fmt.println("p: ", p) //debugging
-		if p.in_function {
+		if p.in_function { 	//only here becuase functions can have a return type in its declaration
 			return parse_variable_declaration(p)
 		}
 	case .ENSURE:
-		// fmt.println("p: ", p) //debugging
 		return parse_constant_declaration(p)
 	case .NOW:
 		return parse_reassignment_statement(p)
@@ -72,8 +71,6 @@ parse_statement :: proc(p: ^types.Parser) -> ^types.Statement {
 		return parse_if_statement(p)
 	case .WHILE:
 		return parse_while_statement(p)
-	case:
-		return parse_expression_statement(p)
 	}
 	return nil
 }
@@ -131,15 +128,13 @@ parse_primary_expression :: proc(parser: ^types.Parser) -> ^types.Expression {
 parse_variable_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 	stmt := new(types.VariableDeclaration)
 	stmt.token = parser.current_token
-
-	fmt.printf("DEBUG: Starting variable declaration with token: %v\n", parser.current_token)
+	stmt.is_const = false
 
 	// Handle type-first declarations
 	if parser.current_token == .NUMBER ||
 	   parser.current_token == .STRING ||
 	   parser.current_token == .FLOAT ||
-	   parser.current_token == .BOOLEAN ||
-	   parser.current_token == .NOTHING {
+	   parser.current_token == .BOOLEAN {
 		stmt.type = lexer.get_type_name(parser.current_token)
 		parser.current_token = lexer.next_token(parser.lexicon)
 		fmt.printf("DEBUG: After type token, current token is: %v\n", parser.current_token)
@@ -185,10 +180,10 @@ parse_variable_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 
 //handles parsing constant declarations with/without explicit types.
 parse_constant_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
-	stmt := new(types.ConstantDeclaration)
+	stmt := new(types.VariableDeclaration)
 	stmt.token = parser.current_token // ENSURE token
 	// fmt.println("first token found: ", stmt.token) //debugging
-
+	stmt.is_const = true
 	parser.current_token = lexer.next_token(parser.lexicon) // Consume 'ENSURE' token
 
 	// Check for explicit type
@@ -237,10 +232,12 @@ parse_constant_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 //used for variable re-assignment
 parse_reassignment_statement :: proc(parser: ^types.Parser) -> ^types.Statement {
 	// Implementation here
-
-	stmt := new(types.ReassignmentStatement)
+	stmt := new(types.VariableDeclaration)
 	stmt.token = parser.current_token
-
+	if stmt.is_const {
+		fmt.println("Error: Cannot reassign a constant")
+		return nil
+	}
 	parser.current_token = lexer.next_token(parser.lexicon) // Consume 'NOW' token
 
 	#partial switch parser.current_token {
@@ -358,11 +355,8 @@ parse_function_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 	return stmt
 }
 
+//ideally params would be listed like: (number x, string y, boolean z) type space identifier
 parse_parameter_list :: proc(parser: ^types.Parser) -> ^types.Expression {
-	return nil
-}
-
-parse_return_type :: proc(parser: ^types.Parser) -> ^types.Statement {
 	return nil
 }
 
@@ -374,6 +368,7 @@ parse_function_call :: proc(parser: ^types.Parser) -> ^types.Statement {
 	return nil
 }
 
+//if statements generally the same as other languages but instead of "elif","else if", or "elseif" EZ uses "otherwise"
 parse_if_statement :: proc(parser: ^types.Parser) -> ^types.Statement {
 	return nil
 }
@@ -382,11 +377,11 @@ parse_while_statement :: proc(parser: ^types.Parser) -> ^types.Statement {
 	return nil
 }
 
-
-parse_expression_statement :: proc(parser: ^types.Parser) -> ^types.Statement {
+//check statements are the same as switch statements
+//check statments use the keywords "check","event","stop" as opposed to "switch","case","break"
+parse_check_statement :: proc(parser: ^types.Parser) -> ^types.Statement {
 	return nil
 }
-
 parse_identifier :: proc(parser: ^types.Parser) -> ^types.Expression {
 	ident := new(types.Identifier)
 	ident.token = parser.current_token
