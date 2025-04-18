@@ -11,19 +11,19 @@ new_parser :: proc(lexicon: ^types.Lexer) -> ^types.Parser {
 	parser.lexicon = lexicon
 
 	// Read the first two tokens
-	parser.current_token = lexer.next_token(parser.lexicon)
-	parser.peek_token = lexer.next_token(parser.lexicon)
+	parser.currentToken = lexer.next_token(parser.lexicon)
+	parser.peekToken = lexer.next_token(parser.lexicon)
 
 	// Reset lexer state completely
 	parser.lexicon.position = 0
-	parser.lexicon.read_position = 0
-	parser.lexicon.ch = 0
+	parser.lexicon.readPosition = 0
+	parser.lexicon.currentChar= 0
 	if len(parser.lexicon.input) > 0 {
-		parser.lexicon.ch = parser.lexicon.input[0]
+		parser.lexicon.currentChar = parser.lexicon.input[0]
 	}
 
 	// Re-read first token to get back to starting position
-	parser.current_token = lexer.next_token(parser.lexicon)
+	parser.currentToken = lexer.next_token(parser.lexicon)
 
 	return parser
 }
@@ -34,8 +34,8 @@ parse_program :: proc(p: ^types.Parser) -> ^types.Program {
 	program.statements = make([dynamic]^types.Statement)
 
 	fmt.println("DEBUG: Starting program parse")
-	for p.current_token != .EOF {
-		// fmt.printf("DEBUG: Processing token: %v\n", p.current_token)
+	for p.currentToken != .EOF {
+		// fmt.printf("DEBUG: Processing token: %v\n", p.currentToken)
 		stmt := parse_statement(p)
 		if stmt != nil {
 			append(&program.statements, stmt)
@@ -44,9 +44,9 @@ parse_program :: proc(p: ^types.Parser) -> ^types.Program {
 			fmt.println("DEBUG: Statement was nil")
 		}
 		// Only advance token if it wasn't already advanced by the statement parser
-		if p.current_token != .EOF {
-			p.current_token = lexer.next_token(p.lexicon)
-			fmt.printf("DEBUG: Advanced to next token: %v\n", p.current_token)
+		if p.currentToken != .EOF {
+			p.currentToken = lexer.next_token(p.lexicon)
+			fmt.printf("DEBUG: Advanced to next token: %v\n", p.currentToken)
 		}
 	}
 
@@ -54,13 +54,13 @@ parse_program :: proc(p: ^types.Parser) -> ^types.Program {
 }
 //parses a statement
 parse_statement :: proc(p: ^types.Parser) -> ^types.Statement {
-	#partial switch p.current_token {
+	#partial switch p.currentToken {
 	case .DO:
 		// fmt.println("p: ", p) //debugging
 		return parse_function_declaration(p)
 	case .NUMBER, .STRING, .FLOAT, .BOOLEAN, .NULL, .EQUALS:
 		// fmt.println("p: ", p) //debugging
-		if p.in_function { 	//only here becuase functions can have a return type in its declaration
+		if p.inFunction { 	//only here becuase functions can have a return type in its declaration
 			return parse_variable_declaration(p)
 		}
 	case .CONST:
@@ -83,10 +83,10 @@ parse_expression :: proc(parser: ^types.Parser) -> ^types.Expression {
 	}
 
 	// Check if there's an operator following
-	#partial switch parser.current_token {
+	#partial switch parser.currentToken {
 	case .PLUS, .MINUS, .TIMES, .DIVIDE, .MOD:
-		operator := parser.current_token
-		parser.current_token = lexer.next_token(parser.lexicon)
+		operator := parser.currentToken
+		parser.currentToken = lexer.next_token(parser.lexicon)
 
 		right := parse_primary_expression(parser)
 		if right == nil {
@@ -106,7 +106,7 @@ parse_expression :: proc(parser: ^types.Parser) -> ^types.Expression {
 
 //parses primary expressions like identifiers, numbers, and strings
 parse_primary_expression :: proc(parser: ^types.Parser) -> ^types.Expression {
-	#partial switch parser.current_token {
+	#partial switch parser.currentToken {
 	case .IDENTIFIER:
 		return parse_identifier(parser)
 	case .NUMBER:
@@ -127,36 +127,36 @@ parse_primary_expression :: proc(parser: ^types.Parser) -> ^types.Expression {
 //4 - Declared as a constant `const x is 10;`
 parse_variable_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 	stmt := new(types.VariableDeclaration)
-	stmt.token = parser.current_token
-	stmt.is_const = false
+	stmt.token = parser.currentToken
+	stmt.isConst = false
 
 	// Handle type-first declarations
-	if parser.current_token == .NUMBER ||
-	   parser.current_token == .STRING ||
-	   parser.current_token == .FLOAT ||
-	   parser.current_token == .BOOLEAN {
-		stmt.type = lexer.get_type_name(parser.current_token)
-		parser.current_token = lexer.next_token(parser.lexicon)
-		fmt.printf("DEBUG: After type token, current token is: %v\n", parser.current_token)
+	if parser.currentToken == .NUMBER ||
+	   parser.currentToken == .STRING ||
+	   parser.currentToken == .FLOAT ||
+	   parser.currentToken == .BOOLEAN {
+		stmt.type = lexer.get_type_name(parser.currentToken)
+		parser.currentToken = lexer.next_token(parser.lexicon)
+		fmt.printf("DEBUG: After type token, current token is: %v\n", parser.currentToken)
 
 		// After type, expect identifier
-		if parser.current_token != .IDENTIFIER {
-			fmt.printf("Error: Expected identifier after type, got %v\n", parser.current_token)
+		if parser.currentToken != .IDENTIFIER {
+			fmt.printf("Error: Expected identifier after type, got %v\n", parser.currentToken)
 			return nil
 		}
 
 		stmt.name = lexer.get_identifier_name(parser.lexicon)
-		parser.current_token = lexer.next_token(parser.lexicon)
-		fmt.printf("DEBUG: After identifier, current token is: %v\n", parser.current_token)
+		parser.currentToken = lexer.next_token(parser.lexicon)
+		fmt.printf("DEBUG: After identifier, current token is: %v\n", parser.currentToken)
 
 		// Expect IS
-		if parser.current_token !=  .EQUALS {
-			fmt.printf("Error: Expected '=' after identifier, got %v\n", parser.current_token)
+		if parser.currentToken !=  .EQUALS {
+			fmt.printf("Error: Expected '=' after identifier, got %v\n", parser.currentToken)
 			return nil
 		}
 
-		parser.current_token = lexer.next_token(parser.lexicon)
-		fmt.printf("DEBUG: After IS token, current token is: %v\n", parser.current_token)
+		parser.currentToken = lexer.next_token(parser.lexicon)
+		fmt.printf("DEBUG: After IS token, current token is: %v\n", parser.currentToken)
 
 		// Parse the expression after IS
 		stmt.value = parse_expression(parser)
@@ -166,53 +166,53 @@ parse_variable_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 		}
 
 		// Handle semicolon
-		if parser.current_token == .SEMICOLON {
-			parser.current_token = lexer.next_token(parser.lexicon)
-			fmt.printf("DEBUG: After semicolon, current token is: %v\n", parser.current_token)
+		if parser.currentToken == .SEMICOLON {
+			parser.currentToken = lexer.next_token(parser.lexicon)
+			fmt.printf("DEBUG: After semicolon, current token is: %v\n", parser.currentToken)
 		}
 
 		return stmt
 	}
 
-	fmt.printf("Error: Expected type declaration, got %v\n", parser.current_token)
+	fmt.printf("Error: Expected type declaration, got %v\n", parser.currentToken)
 	return nil
 }
 
 //handles parsing constant declarations with/without explicit types.
 parse_constant_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 	stmt := new(types.VariableDeclaration)
-	stmt.token = parser.current_token //  CONST token
+	stmt.token = parser.currentToken //  CONST token
 	// fmt.println("first token found: ", stmt.token) //debugging
-	stmt.is_const = true
-	parser.current_token = lexer.next_token(parser.lexicon) // Consume 'CONST' token
+	stmt.isConst = true
+	parser.currentToken = lexer.next_token(parser.lexicon) // Consume 'CONST' token
 
 	// Check for explicit type
-	#partial switch (parser.current_token) {
+	#partial switch (parser.currentToken) {
 	case .NUMBER, .STRING, .FLOAT, .BOOLEAN, .NULL:
 		//consume the type token
-		parser.current_token = lexer.next_token(parser.lexicon)
+		parser.currentToken = lexer.next_token(parser.lexicon)
 	case:
 	//implicitly types the identifier
 	// do nothing
 	}
 
-	if parser.current_token != .IDENTIFIER {
-		fmt.printf("Error: Expected identifier after 'CONST', got %v\n", parser.current_token)
+	if parser.currentToken != .IDENTIFIER {
+		fmt.printf("Error: Expected identifier after 'CONST', got %v\n", parser.currentToken)
 		return nil
 	}
 
 	stmt.name = lexer.get_identifier_name(parser.lexicon) // Get identifier name
-	parser.current_token = lexer.next_token(parser.lexicon) // Consume identifier
+	parser.currentToken = lexer.next_token(parser.lexicon) // Consume identifier
 
 	//Next check if the current token is an IS token.
 	//if not throw error becuase IS is needed to assign a value
-	if parser.current_token != .EQUALS {
-		fmt.printf("Error: Expected '=' after identifier, got %v\n", parser.current_token)
+	if parser.currentToken != .EQUALS {
+		fmt.printf("Error: Expected '=' after identifier, got %v\n", parser.currentToken)
 		return nil
 	}
 
 	//Consume the = token
-	parser.current_token = lexer.next_token(parser.lexicon)
+	parser.currentToken = lexer.next_token(parser.lexicon)
 
 	//Parse the expression that is assigned to the constant
 	stmt.value = parse_expression(parser)
@@ -222,8 +222,8 @@ parse_constant_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 	}
 
 	//if the next token is a semicolon, consume it
-	if parser.peek_token == .SEMICOLON {
-		parser.current_token = lexer.next_token(parser.lexicon)
+	if parser.peekToken == .SEMICOLON {
+		parser.currentToken = lexer.next_token(parser.lexicon)
 	}
 
 	return stmt
@@ -233,36 +233,36 @@ parse_constant_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 parse_reassignment_statement :: proc(parser: ^types.Parser) -> ^types.Statement {
 	// Implementation here
 	stmt := new(types.VariableDeclaration)
-	stmt.token = parser.current_token
-	if stmt.is_const {
+	stmt.token = parser.currentToken
+	if stmt.isConst {
 		fmt.println("Error: Cannot reassign a constant")
 		return nil
 	}
-	parser.current_token = lexer.next_token(parser.lexicon) // Consume 'NOW' token
+	parser.currentToken = lexer.next_token(parser.lexicon) // Consume 'NOW' token
 
-	#partial switch parser.current_token {
+	#partial switch parser.currentToken {
 	// Check for explicit type
 	case .STRING, .NUMBER, .FLOAT, .BOOLEAN, .NULL:
 		//consume the type token
-		parser.current_token = lexer.next_token(parser.lexicon)
+		parser.currentToken = lexer.next_token(parser.lexicon)
 	case:
 	//implicitly types the identifier
 	// do nothing
 	}
 
-	if parser.current_token != .IDENTIFIER {
-		fmt.printf("Error: Expected identifier after 'NOW', got %v\n", parser.current_token)
+	if parser.currentToken != .IDENTIFIER {
+		fmt.printf("Error: Expected identifier after 'NOW', got %v\n", parser.currentToken)
 		return nil
 	}
 
 	stmt.name = lexer.get_identifier_name(parser.lexicon) // Get identifier name
-	parser.current_token = lexer.next_token(parser.lexicon) // Consume identifier
+	parser.currentToken = lexer.next_token(parser.lexicon) // Consume identifier
 
-	if parser.current_token != .EQUALS {
-		fmt.printf("Error: Expected 'IS' after identifier, got %v\n", parser.current_token)
+	if parser.currentToken != .EQUALS {
+		fmt.printf("Error: Expected 'IS' after identifier, got %v\n", parser.currentToken)
 		return nil
 	}
-	parser.current_token = lexer.next_token(parser.lexicon) // Consume 'IS' token
+	parser.currentToken = lexer.next_token(parser.lexicon) // Consume 'IS' token
 
 
 	stmt.value = parse_expression(parser)
@@ -272,8 +272,8 @@ parse_reassignment_statement :: proc(parser: ^types.Parser) -> ^types.Statement 
 	}
 
 
-	if parser.peek_token == .SEMICOLON {
-		parser.current_token = lexer.next_token(parser.lexicon)
+	if parser.peekToken == .SEMICOLON {
+		parser.currentToken = lexer.next_token(parser.lexicon)
 	}
 
 	return stmt
@@ -284,59 +284,59 @@ parse_reassignment_statement :: proc(parser: ^types.Parser) -> ^types.Statement 
 //functions are gonna be a bit fucky.
 parse_function_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 	stmt := new(types.FunctionDeclaration)
-	stmt.token = parser.current_token // DO token
-	parser.current_token = lexer.next_token(parser.lexicon) // consume DO token
+	stmt.token = parser.currentToken // DO token
+	parser.currentToken = lexer.next_token(parser.lexicon) // consume DO token
 
 	// Parse function name
-	if parser.current_token != .IDENTIFIER {
-		fmt.printf("Error: Expected identifier after 'do', got %v\n", parser.current_token)
+	if parser.currentToken != .IDENTIFIER {
+		fmt.printf("Error: Expected identifier after 'do', got %v\n", parser.currentToken)
 		return nil
 	}
 	stmt.name = lexer.get_identifier_name(parser.lexicon)
-	parser.current_token = lexer.next_token(parser.lexicon)
+	parser.currentToken = lexer.next_token(parser.lexicon)
 
 	// Handle parameters
-	if parser.current_token == .LPAREN {
-		parser.current_token = lexer.next_token(parser.lexicon)
-		if parser.current_token != .RPAREN {
+	if parser.currentToken == .LPAREN {
+		parser.currentToken = lexer.next_token(parser.lexicon)
+		if parser.currentToken != .RPAREN {
 			// Parse parameter list if needed
 			// ... parameter parsing code ...
 		}
-		parser.current_token = lexer.next_token(parser.lexicon) // consume )
+		parser.currentToken = lexer.next_token(parser.lexicon) // consume )
 	}
 
 	// Handle return type
-	if parser.current_token == .RETURNS {
-		parser.current_token = lexer.next_token(parser.lexicon)
+	if parser.currentToken == .RETURNS {
+		parser.currentToken = lexer.next_token(parser.lexicon)
 		stmt.returnStatment = new(types.ReturnStatement)
 
-		#partial switch parser.current_token {
+		#partial switch parser.currentToken {
 		case .NUMBER, .STRING, .FLOAT, .BOOLEAN, .NULL:
-			stmt.returnStatment.type = lexer.get_type_name(parser.current_token)
-			parser.current_token = lexer.next_token(parser.lexicon)
+			stmt.returnStatment.type = lexer.get_type_name(parser.currentToken)
+			parser.currentToken = lexer.next_token(parser.lexicon)
 		case:
 			fmt.printf(
 				"Error: Expected return type after 'returns', got %v\n",
-				parser.current_token,
+				parser.currentToken,
 			)
 			return nil
 		}
 	}
 
 	// Parse function body
-	if parser.current_token != .LCBRACE {
+	if parser.currentToken != .LCBRACE {
 		fmt.printf(
 			"Error: Expected '{' after function declaration, got %v\n",
-			parser.current_token,
+			parser.currentToken,
 		)
 		return nil
 	}
-	parser.in_function = true
-	parser.current_token = lexer.next_token(parser.lexicon) // consume {
+	parser.inFunction = true
+	parser.currentToken = lexer.next_token(parser.lexicon) // consume {
 
 	// Parse statements in function body
 	body_statements := make([dynamic]^types.BlockStatement)
-	for parser.current_token != .RCBRACE && parser.current_token != .EOF {
+	for parser.currentToken != .RCBRACE && parser.currentToken != .EOF {
 		stmt := parse_statement(parser)
 		if stmt != nil {
 			// Create a new BlockStatement to wrap the regular statement
@@ -346,9 +346,9 @@ parse_function_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 			append(&body_statements, block_stmt)
 		}
 	}
-	parser.in_function = false
-	if parser.current_token == .RCBRACE {
-		parser.current_token = lexer.next_token(parser.lexicon) // consume }
+	parser.inFunction = false
+	if parser.currentToken == .RCBRACE {
+		parser.currentToken = lexer.next_token(parser.lexicon) // consume }
 	}
 
 	stmt.body = body_statements[:]
@@ -384,24 +384,24 @@ parse_check_statement :: proc(parser: ^types.Parser) -> ^types.Statement {
 }
 parse_identifier :: proc(parser: ^types.Parser) -> ^types.Expression {
 	ident := new(types.Identifier)
-	ident.token = parser.current_token
-	ident.value = parser.lexicon.last_identifier
-	parser.current_token = lexer.next_token(parser.lexicon)
+	ident.token = parser.currentToken
+	ident.value = parser.lexicon.lastIdentifier
+	parser.currentToken = lexer.next_token(parser.lexicon)
 	return ident
 }
 
 parse_number_literal :: proc(parser: ^types.Parser) -> ^types.Expression {
 	literal := new(types.NumberLiteral)
-	literal.token = parser.current_token
-	literal.value = parser.lexicon.last_number
-	parser.current_token = lexer.next_token(parser.lexicon)
+	literal.token = parser.currentToken
+	literal.value = parser.lexicon.lastNumber
+	parser.currentToken = lexer.next_token(parser.lexicon)
 	return literal
 }
 
 parse_string_literal :: proc(parser: ^types.Parser) -> ^types.Expression {
 	literal := new(types.StringLiteral)
-	literal.token = parser.current_token
-	literal.value = parser.lexicon.last_string
-	parser.current_token = lexer.next_token(parser.lexicon)
+	literal.token = parser.currentToken
+	literal.value = parser.lexicon.lastString
+	parser.currentToken = lexer.next_token(parser.lexicon)
 	return literal
 }

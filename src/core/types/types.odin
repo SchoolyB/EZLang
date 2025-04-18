@@ -72,12 +72,12 @@ Token :: enum {
 Lexer :: struct {
 	input:           string, // The full input string to be lexically analyzed
 	position:        int, // Current position in the input (points to current char)
-	read_position:   int, // Current reading position in input (after current char)
-	ch:              byte, // Current character
-	last_identifier: string, //last identifier read
-	last_number:     int, //last number read
-	last_string:     string, //last string read
-	last_token:      Token, //last token read
+	readPosition:   int, // Current reading position in input (after current char)
+	currentChar:              byte, // Current character
+	lastIdentifier: string, //last identifier read
+	lastNumber:     int, //last number read
+	lastString:     string, //last string read
+	lastToken:      Token, //last token read
 }
 
 
@@ -85,11 +85,11 @@ Lexer :: struct {
 // It takes tokens from the Lexer and constructs an Abstract Syntax Tree (AST).
 Parser :: struct {
 	lexicon:         ^Lexer, // Pointer to the Lexer, used to get tokens
-	current_token:   Token, // The current token being processed
-	peek_token:      Token, // The next token, used for lookahead
-	last_identifier: string, // Add this field???
-	last_string:     string, // Add this field???
-	in_function:     bool, // flag to indicate if we are in a function.
+	currentToken:   Token, // The current token being processed
+	peekToken:      Token, // The next token, used for lookahead
+	lastIdentifier: string, // Add this field???
+	lastString:     string, // Add this field???
+	inFunction:     bool, // flag to indicate if we are in a function.
 }
 
 // Node is the base struct for all AST nodes.
@@ -123,10 +123,10 @@ VariableDeclaration :: struct {
 	name:       string, // The name of the variable being declared
 	type:       string, // The type of the variable being declared
 	value:      ^Expression, // The initial value of the variable (as an expression)
-	is_const:   bool, // Flag to indicate if the variable is a constant
+	isConst:   bool, // Flag to indicate if the variable is a constant
 }
 
-//commented out for now because the is_const flag was added in the VariableDeclaration struct
+//commented out for now because the isConst flag was added in the VariableDeclaration struct
 // // ConstantDeclaration represents a constant declaration statement.
 // // It includes the constant name and its value.
 // ConstantDeclaration :: struct {

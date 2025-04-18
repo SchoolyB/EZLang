@@ -11,7 +11,7 @@ new_lexer :: proc(input: string) -> ^types.Lexer {
 	lexicon := new(Lexer)
 	lexicon.input = input
 	lexicon.position = 0
-	lexicon.read_position = 0
+	lexicon.readPosition = 0
 	read_char(lexicon)
 	return lexicon
 }
@@ -19,13 +19,13 @@ new_lexer :: proc(input: string) -> ^types.Lexer {
 
 //Reads the next character in the input string
 read_char :: proc(lexicon: ^types.Lexer) {
-	if lexicon.read_position >= len(lexicon.input) {
-		lexicon.ch = 0 // EOF
+	if lexicon.readPosition >= len(lexicon.input) {
+		lexicon.currentChar = 0 // EOF
 	} else {
-		lexicon.ch = lexicon.input[lexicon.read_position]
+		lexicon.currentChar = lexicon.input[lexicon.readPosition]
 	}
-	lexicon.position = lexicon.read_position
-	lexicon.read_position += 1
+	lexicon.position = lexicon.readPosition
+	lexicon.readPosition += 1
 }
 
 get_type_name :: proc(token: types.Token) -> string {
@@ -49,18 +49,18 @@ next_token :: proc(lexicon: ^types.Lexer) -> types.Token {
 	using types
 	token: Token
 
-	for lexicon.ch == ' ' || lexicon.ch == '\t' || lexicon.ch == '\n' || lexicon.ch == '\r' {
+	for lexicon.currentChar == ' ' || lexicon.currentChar == '\t' || lexicon.currentChar == '\n' || lexicon.currentChar == '\r' {
 		read_char(lexicon)
 	}
 
 	if lexicon.position >= len(lexicon.input) {
-		lexicon.last_token = .EOF
+		lexicon.lastToken = .EOF
 		return .EOF
 	}
 
-	switch lexicon.ch {
+	switch lexicon.currentChar {
 	case '=':
-	   if lexicon.read_position < len(lexicon.input) && lexicon.input[lexicon.read_position] == '='{
+	   if lexicon.readPosition < len(lexicon.input) && lexicon.input[lexicon.readPosition] == '='{
 				token = .EQUAL_TO
 		}else {
 		token = .EQUALS
@@ -77,8 +77,8 @@ next_token :: proc(lexicon: ^types.Lexer) -> types.Token {
 	   token = .MOD
 	case '>':
 	   // Check if it's a >>> token
-	   if lexicon.read_position < len(lexicon.input) && lexicon.input[lexicon.read_position] == '>' {
-	       if lexicon.read_position + 1 < len(lexicon.input) && lexicon.input[lexicon.read_position + 1] == '>' {
+	   if lexicon.readPosition < len(lexicon.input) && lexicon.input[lexicon.readPosition] == '>' {
+	       if lexicon.readPosition + 1 < len(lexicon.input) && lexicon.input[lexicon.readPosition + 1] == '>' {
 	           read_char(lexicon) // consume the second '>'
 	           read_char(lexicon) // consume the third '>'
 	           token = .RETURNS
@@ -109,17 +109,17 @@ next_token :: proc(lexicon: ^types.Lexer) -> types.Token {
 	case '.':
 		token = .DOT
 	case 0:
-		lexicon.last_token = .EOF
+		lexicon.lastToken = .EOF
 		return .EOF
 	case '"':
 		token = read_string(lexicon)
 	case:
-		if is_letter(lexicon.ch) {
+		if is_letter(lexicon.currentChar) {
 			identifier := read_identifier(lexicon)
-			lexicon.last_identifier = identifier
+			lexicon.lastIdentifier = identifier
 			token = lookup_identifier(identifier)
-		} else if is_digit(lexicon.ch) {
-			lexicon.last_number = read_number(lexicon)
+		} else if is_digit(lexicon.currentChar) {
+			lexicon.lastNumber = read_number(lexicon)
 			token = .NUMBER
 		} else {
 			token = .ILLEGAL
@@ -127,14 +127,14 @@ next_token :: proc(lexicon: ^types.Lexer) -> types.Token {
 	}
 
 	read_char(lexicon)
-	lexicon.last_token = token
+	lexicon.lastToken = token
 	return token
 }
 
 //Reads the identifier from the input string
 read_identifier :: proc(lexicon: ^types.Lexer) -> string {
 	start_position := lexicon.position
-	for lexicon.position < len(lexicon.input) && (is_letter(lexicon.ch) || is_digit(lexicon.ch)) {
+	for lexicon.position < len(lexicon.input) && (is_letter(lexicon.currentChar) || is_digit(lexicon.currentChar)) {
 		read_char(lexicon)
 	}
 	return lexicon.input[start_position:lexicon.position]
@@ -224,13 +224,13 @@ is_digit :: proc(ch: byte) -> bool {
 }
 
 get_identifier_name :: proc(lexicon: ^types.Lexer) -> string {
-	return lexicon.last_identifier
+	return lexicon.lastIdentifier
 }
 
 get_current_token_literal :: proc(lexicon: ^types.Lexer) -> string {
-	#partial switch lexicon.last_token {
+	#partial switch lexicon.lastToken {
 	case .IDENTIFIER:
-		return lexicon.last_identifier
+		return lexicon.lastIdentifier
 	case .CONST:
 		return "const"
 	case .EQUALS:
@@ -281,7 +281,7 @@ get_current_token_literal :: proc(lexicon: ^types.Lexer) -> string {
 
 read_number :: proc(lexicon: ^types.Lexer) -> int {
 	start_position := lexicon.position
-	for lexicon.position < len(lexicon.input) && is_digit(lexicon.ch) {
+	for lexicon.position < len(lexicon.input) && is_digit(lexicon.currentChar) {
 		read_char(lexicon)
 	}
 	number_str := lexicon.input[start_position:lexicon.position]
@@ -299,11 +299,11 @@ read_string :: proc(lexicon: ^types.Lexer) -> types.Token {
 	start_position := lexicon.position + 1
 	for {
 		read_char(lexicon)
-		if lexicon.ch == '"' || lexicon.ch == 0 {
+		if lexicon.currentChar == '"' || lexicon.currentChar == 0 {
 			break
 		}
 	}
-	lexicon.last_string = lexicon.input[start_position:lexicon.position]
+	lexicon.lastString = lexicon.input[start_position:lexicon.position]
 	read_char(lexicon) // consume closing quote
 
 	return .STRING
