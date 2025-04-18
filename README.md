@@ -1,63 +1,69 @@
 # EZLang Programming Language Specification
-A programming language designed to be as close to plain English as possible.
+A programming language designed to be accessible for programmers of all levels.
 
 ## 1. Basic Syntax Rules
 - Statements end with semicolons (;)
 - Code blocks are enclosed in curly braces { }
-- Case-insensitive keywords
+- Case-sensitive keywords
 - Comments start with //
 
 ## 2. Data Types
 | Type      | Description            | Example                |
 | --------- | ---------------------- | ---------------------- |
-| Number    | Integer values         | `number x is 42;`      |
-| Decimal   | Floating-point numbers | `decimal x is 3.14;`   |
-| Character | Single character       | `character x is 'A';`  |
-| String    | Text sequence          | `string x is "Hello";` |
-| Boolean   | True/false value       | `boolean x is true;`   |
-| Nothing   | Null value             | `x is nothing;`        |
+| Number    | Integer values         | `Number x = 42;`       |
+| Float     | Floating-point numbers | `Float x = 3.14;`    |
+| String    | Text values            | `String x = "hello";`  |
+| Boolean   | True/false values      | `Boolean x = true;`    |
+| Null   | Null type         | `Null`              |
 
 ## 3. Variable Declaration and Assignment
 ### Variable Declaration
 ```
 // Implicit typing
-x is 0;
+`name = "John";`
+`age = 21;`
+
+Note: When defining a variable but not assigning a value, you MUST explicitly define its type.
+Example" `String name;`
 
 // Explicit typing
-Number x;
-Number x is 0;
+`String name = "John";`
+`Number age = 21;`
+
+
 
 // Constants
-Ensure x is 0;
-Ensure Number x;
-Ensure Number x is 0;
+const x = 100; // implicitly typed constant with value
+const string name; // explicit typed constnant without value
+const Number x = 0; // explicit typed constant with value
 ```
 
 ### Variable Reassignment
+Note: Constants cannot be re-assigned
 ```
-now x is 1;
+now x = 1;
 ```
 
 ## 4. Operators
 
 ### Arithmetic Operators
-| Keyword | Symbol | Example      |
-| ------- | ------ | ------------ |
-| plus    | +      | `x plus y`   |
-| minus   | -      | `x minus y`  |
-| times   | *      | `x times y`  |
-| divide  | /      | `x divide y` |
-| mod     | %      | `x mod y`    |
+| Symbol | Example      |
+| ------ | ------------ |
+| +      | `x + y`   |
+| -      | `x - y`  |
+| *      | `x * y`  |
+| /      | `x / y` |
+| %      | `x % y`    |
 
 ### Comparison Operators
-| Keyword         | Symbol | Example               |
-| --------------- | ------ | --------------------- |
-| equal       | ==     | `x equal y`          |
-| nequal      | !=     | `x nequals y`      |
-| gthan       | >      | `x gthan y`           |
-| lthan       | <      | `x lthan y`           |
-| gthaneq | >= | `x gthane y` |
-| lthaneq | <= | `x lthane y` |
+| Symbol | Example               |
+| ------ | --------------------- |
+| ==     |    `x == y`          |
+| !=     | `x != y`|
+| >      | `x > y` |
+| <      | `x < y` |
+| >=     | `x  >= y` |
+| <=     | `x <= y` |
 
 ### Logical Operators
 | Keyword | Symbol | Example   |
@@ -68,11 +74,13 @@ now x is 1;
 ## 5. Control Structures
 
 ### Conditional Statements
+
+#### If Statement
 ```
-if (condition) {
+if (x > 10) {
     // code
 }
-if not (condition) {
+else if (condition) {
     // code
 }
 otherwise {
@@ -83,37 +91,41 @@ otherwise {
 ### Loops
 ```
 // While loop
-while (condition) {
+while (x > 0) {
     // code
 }
 
 // Do-while loop
-until (condition) {
+until (x == 1) {
     // code
 }
 
 // For loop
-for (initialization; condition; increment) {
+for (Number i; i < 0; i++) {
     // code
 }
 
 // For-each loop
-for every item in collection {
+for every name in names  {
     // code
 }
 ```
 
 ### Switch Statements
 ```
-check (variable) {
-    event value1 {
+check (x) {
+    event 0:
+        // code
+        go-on;  //go-on to next event, is the same as fallthrough in C++
+    event 1:
+        // code
+        stop;  //stop the execution of the switch
+    event 2:
         // code
         stop;
-    }
-    event value2 {
+    default:
         // code
-        go-on;
-    }
+        stop;
 }
 ```
 
@@ -122,76 +134,72 @@ check (variable) {
 ### Function Declaration
 ```
 // No parameters, no return
-do functionName(){
+do function_name(){
     // code
 }
 
 // With parameters, no return
-do functionName(type param1, type param2) {
+do function_name(Number x, String name) {
     // code
 }
 
-// With parameters and return
-do functionName(type param1, type param2) returns returnType {
+// With parameters and explicit return type
+do function_name(Float y, Number x)  >>> Boolean {
     // code
-    return returnValue;
+    return true;
 }
 
 
-do int functionName() {
+//No parameters, with explicit return type
+do main() returns Number {
     // code
     return 0;
 }
+
+// No parameters, no return
+// If a return type is not specified, it will be inferred as void
+do main() {
+
+}
+
 ```
 
 ### Function Calls
 ```
 // No parameters
-functionName;
+function_name();
 
 // With parameters
-functionName(param1, param2);
+function_name(21, "John")
 
 // With return value
-result is functionName(param1, param2);
+result = function_name(21, "John");
 
 // Multiple return values
-result1, result2 is functionName(param1, param2);
+result, error = function_name(21, "John");
+
+//Multiple return values, but ignoring one
+result, _ = function_name(21, "John");
 ```
+
 
 ## 7. Example Program
 ```
-#import "io.ez"
+#import "ez:std"
+#import "ez:io"
 
-number a is 5;
-number b is 10;
+Number a is 5; //Global variable declaration and assignment
+Number b is 10;
 
-do main() returns number {
-    result is add with (a, b);
-    display(result);  // output: 20
+do add(Number x, Number y) returns Number {
+    Number total = x + y;
+    return total;
+}
+
+do main() returns Number {
+    result = std.add(a, b); //accessing a function from the std module
+    io.display(result);  // output: 20     //accessing a function from the io module
     return result;
 }
 
-do add(number x, number y) returns number {
-    number total is x plus y;
-
-    if (total equals 15) {
-        total is now 20;
-    }
-
-    check (total) {
-        event 20:
-            display("Total is 20");
-            stop;
-        event 25:
-            display("Total is 25");
-            stop;
-    }
-
-    while (total lthan 20) {
-        total is now total plus 1;
-    }
-
-    send total;
-}
 ```
