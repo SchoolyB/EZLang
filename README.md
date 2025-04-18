@@ -188,8 +188,8 @@ result, _ = function_name(21, "John");
 #import "ez:std"
 #import "ez:io"
 
-Number a is 5; //Global variable declaration and assignment
-Number b is 10;
+Number a = 5; //Global variable declaration and assignment
+Number b = 10;
 
 do add(Number x, Number y) returns Number {
     Number total = x + y;
