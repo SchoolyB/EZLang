@@ -165,10 +165,15 @@ WhileStatement :: struct {
 FunctionDeclaration :: struct {
 	using stmt:     Statement,
 	name:           string, // The name of the function
-	parameters:     []string, // An array of parameter names
+	parameters:     [dynamic]^Parameter, // An array of parameter names
 	body:           []^BlockStatement, // The body of the function
 	returnStatment: ^ReturnStatement, // The return statement of the function
 }
+Parameter ::struct{
+    type: string,
+    name: string
+}
+
 
 ReturnStatement :: struct {
 	using stmt: Statement,

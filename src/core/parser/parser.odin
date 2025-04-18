@@ -297,12 +297,19 @@ parse_function_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 
 	// Handle parameters
 	if parser.currentToken == .LPAREN {
-		parser.currentToken = lexer.next_token(parser.lexicon)
-		if parser.currentToken != .RPAREN {
-			// Parse parameter list if needed
-			// ... parameter parsing code ...
-		}
-		parser.currentToken = lexer.next_token(parser.lexicon) // consume )
+	    parser.currentToken = lexer.next_token(parser.lexicon)
+	    if parser.currentToken != .RPAREN {
+	        // Parse parameter list
+	        stmt.parameters = parse_parameter_list(parser)
+			defer delete(stmt.parameters)
+	    }
+
+	    if parser.currentToken == .RPAREN {
+	        parser.currentToken = lexer.next_token(parser.lexicon) // consume )
+	    } else {
+	        fmt.printf("Error: Expected ')' after parameter list, got %v\n", parser.currentToken)
+	        return nil
+	    }
 	}
 
 	// Handle return type
@@ -355,9 +362,46 @@ parse_function_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 	return stmt
 }
 
-//ideally params would be listed like: (number x, string y, boolean z) type space identifier
-parse_parameter_list :: proc(parser: ^types.Parser) -> ^types.Expression {
-	return nil
+//ideally params would be listed like: (Number x, string y, Boolean z) type space identifier
+parse_parameter_list :: proc(parser: ^types.Parser) -> [dynamic]^types.Parameter {
+    parameters := make([dynamic]^types.Parameter)
+
+    // Continue parsing parameters until we hit a closing parenthesis
+    for parser.currentToken != .RPAREN && parser.currentToken != .EOF {
+        param := new(types.Parameter)
+
+        // Check for type
+        #partial switch parser.currentToken {
+        case .NUMBER, .STRING, .FLOAT, .BOOLEAN, .NULL:
+            param.type = lexer.get_type_name(parser.currentToken)
+            parser.currentToken = lexer.next_token(parser.lexicon)
+        case:
+            fmt.printf("Error: Expected parameter type, got %v\n", parser.currentToken)
+            return parameters
+        }
+
+        // Check for identifier
+        if parser.currentToken != .IDENTIFIER {
+            fmt.printf("Error: Expected parameter name after type, got %v\n", parser.currentToken)
+            return parameters
+        }
+
+        param.name = lexer.get_identifier_name(parser.lexicon)
+        parser.currentToken = lexer.next_token(parser.lexicon)
+
+        // Add parameter to list
+        append(&parameters, param)
+
+        // If next token is a comma, consume it and continue
+        if parser.currentToken == .COMMA {
+            parser.currentToken = lexer.next_token(parser.lexicon)
+        } else if parser.currentToken != .RPAREN {
+            fmt.printf("Error: Expected ',' or ')' after parameter, got %v\n", parser.currentToken)
+            return parameters
+        }
+    }
+
+    return parameters
 }
 
 parse_return_statement :: proc(parser: ^types.Parser) -> ^types.Statement {
