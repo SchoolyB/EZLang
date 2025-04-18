@@ -58,12 +58,12 @@ parse_statement :: proc(p: ^types.Parser) -> ^types.Statement {
 	case .DO:
 		// fmt.println("p: ", p) //debugging
 		return parse_function_declaration(p)
-	case .NUMBER, .STRING, .FLOAT, .BOOLEAN, .NOTHING, .IS:
+	case .NUMBER, .STRING, .FLOAT, .BOOLEAN, .NULL, .EQUALS:
 		// fmt.println("p: ", p) //debugging
 		if p.in_function { 	//only here becuase functions can have a return type in its declaration
 			return parse_variable_declaration(p)
 		}
-	case .ENSURE:
+	case .CONST:
 		return parse_constant_declaration(p)
 	case .NOW:
 		return parse_reassignment_statement(p)
@@ -124,7 +124,7 @@ parse_primary_expression :: proc(parser: ^types.Parser) -> ^types.Expression {
 //1 - Explicitly typed without a value assigned`number x;`
 //2 - Typed or untyped with a value assigned `number x is 10;` or `x is 10;`
 //3 - Declared before hand then re-assigned later `number x; x is 10;` or `number x is; now x is 10;`
-//4 - Declared as a constant `ensure x is 10;`
+//4 - Declared as a constant `const x is 10;`
 parse_variable_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 	stmt := new(types.VariableDeclaration)
 	stmt.token = parser.current_token
@@ -150,8 +150,8 @@ parse_variable_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 		fmt.printf("DEBUG: After identifier, current token is: %v\n", parser.current_token)
 
 		// Expect IS
-		if parser.current_token != .IS {
-			fmt.printf("Error: Expected 'IS' after identifier, got %v\n", parser.current_token)
+		if parser.current_token !=  .EQUALS {
+			fmt.printf("Error: Expected '=' after identifier, got %v\n", parser.current_token)
 			return nil
 		}
 
@@ -181,14 +181,14 @@ parse_variable_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 //handles parsing constant declarations with/without explicit types.
 parse_constant_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 	stmt := new(types.VariableDeclaration)
-	stmt.token = parser.current_token // ENSURE token
+	stmt.token = parser.current_token //  CONST token
 	// fmt.println("first token found: ", stmt.token) //debugging
 	stmt.is_const = true
-	parser.current_token = lexer.next_token(parser.lexicon) // Consume 'ENSURE' token
+	parser.current_token = lexer.next_token(parser.lexicon) // Consume 'CONST' token
 
 	// Check for explicit type
 	#partial switch (parser.current_token) {
-	case .NUMBER, .STRING, .FLOAT, .BOOLEAN, .NOTHING:
+	case .NUMBER, .STRING, .FLOAT, .BOOLEAN, .NULL:
 		//consume the type token
 		parser.current_token = lexer.next_token(parser.lexicon)
 	case:
@@ -197,7 +197,7 @@ parse_constant_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 	}
 
 	if parser.current_token != .IDENTIFIER {
-		fmt.printf("Error: Expected identifier after 'ENSURE', got %v\n", parser.current_token)
+		fmt.printf("Error: Expected identifier after 'CONST', got %v\n", parser.current_token)
 		return nil
 	}
 
@@ -206,12 +206,12 @@ parse_constant_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 
 	//Next check if the current token is an IS token.
 	//if not throw error becuase IS is needed to assign a value
-	if parser.current_token != .IS {
-		fmt.printf("Error: Expected 'IS' after identifier, got %v\n", parser.current_token)
+	if parser.current_token != .EQUALS {
+		fmt.printf("Error: Expected '=' after identifier, got %v\n", parser.current_token)
 		return nil
 	}
 
-	//Consume the IS token
+	//Consume the = token
 	parser.current_token = lexer.next_token(parser.lexicon)
 
 	//Parse the expression that is assigned to the constant
@@ -242,7 +242,7 @@ parse_reassignment_statement :: proc(parser: ^types.Parser) -> ^types.Statement 
 
 	#partial switch parser.current_token {
 	// Check for explicit type
-	case .STRING, .NUMBER, .FLOAT, .BOOLEAN, .NOTHING:
+	case .STRING, .NUMBER, .FLOAT, .BOOLEAN, .NULL:
 		//consume the type token
 		parser.current_token = lexer.next_token(parser.lexicon)
 	case:
@@ -258,7 +258,7 @@ parse_reassignment_statement :: proc(parser: ^types.Parser) -> ^types.Statement 
 	stmt.name = lexer.get_identifier_name(parser.lexicon) // Get identifier name
 	parser.current_token = lexer.next_token(parser.lexicon) // Consume identifier
 
-	if parser.current_token != .IS {
+	if parser.current_token != .EQUALS {
 		fmt.printf("Error: Expected 'IS' after identifier, got %v\n", parser.current_token)
 		return nil
 	}
@@ -311,7 +311,7 @@ parse_function_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 		stmt.returnStatment = new(types.ReturnStatement)
 
 		#partial switch parser.current_token {
-		case .NUMBER, .STRING, .FLOAT, .BOOLEAN, .NOTHING:
+		case .NUMBER, .STRING, .FLOAT, .BOOLEAN, .NULL:
 			stmt.returnStatment.type = lexer.get_type_name(parser.current_token)
 			parser.current_token = lexer.next_token(parser.lexicon)
 		case:
@@ -324,7 +324,7 @@ parse_function_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 	}
 
 	// Parse function body
-	if parser.current_token != .LBRACE {
+	if parser.current_token != .LCBRACE {
 		fmt.printf(
 			"Error: Expected '{' after function declaration, got %v\n",
 			parser.current_token,
@@ -336,7 +336,7 @@ parse_function_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 
 	// Parse statements in function body
 	body_statements := make([dynamic]^types.BlockStatement)
-	for parser.current_token != .RBRACE && parser.current_token != .EOF {
+	for parser.current_token != .RCBRACE && parser.current_token != .EOF {
 		stmt := parse_statement(parser)
 		if stmt != nil {
 			// Create a new BlockStatement to wrap the regular statement
@@ -347,7 +347,7 @@ parse_function_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 		}
 	}
 	parser.in_function = false
-	if parser.current_token == .RBRACE {
+	if parser.current_token == .RCBRACE {
 		parser.current_token = lexer.next_token(parser.lexicon) // consume }
 	}
 

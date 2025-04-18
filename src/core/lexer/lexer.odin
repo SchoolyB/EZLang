@@ -31,15 +31,15 @@ read_char :: proc(lexicon: ^types.Lexer) {
 get_type_name :: proc(token: types.Token) -> string {
 	#partial switch token {
 	case .NUMBER:
-		return "number"
+		return "Number"
 	case .STRING:
-		return "string"
+		return "String"
 	case .FLOAT:
-		return "float"
+		return "Float"
 	case .BOOLEAN:
-		return "boolean"
-	case .NOTHING:
-		return "nothing"
+		return "Boolean"
+	case .NULL:
+		return "Null"
 	case:
 		return ""
 	}
@@ -59,22 +59,51 @@ next_token :: proc(lexicon: ^types.Lexer) -> types.Token {
 	}
 
 	switch lexicon.ch {
+	case '=':
+	   if lexicon.read_position < len(lexicon.input) && lexicon.input[lexicon.read_position] == '='{
+				token = .EQUAL_TO
+		}else {
+		token = .EQUALS
+		}
+	case '+':
+	   token = .PLUS
+	case '-':
+	   token = .MINUS
+	case '*':
+	   token = .TIMES
+	case '/':
+	   token = .DIVIDE
+	case '%':
+	   token = .MOD
+	case '>':
+	   // Check if it's a >>> token
+	   if lexicon.read_position < len(lexicon.input) && lexicon.input[lexicon.read_position] == '>' {
+	       if lexicon.read_position + 1 < len(lexicon.input) && lexicon.input[lexicon.read_position + 1] == '>' {
+	           read_char(lexicon) // consume the second '>'
+	           read_char(lexicon) // consume the third '>'
+	           token = .RETURNS
+	       } else {
+	           token = .GTHAN
+	       }
+	   } else {
+	       token = .GTHAN
+	   }
 	case ';':
 		token = .SEMICOLON
 	case ':':
 		token = .COLON
 	case '{':
-		token = .LBRACE
+		token = .LCBRACE
 	case '}':
-		token = .RBRACE
+		token = .RCBRACE
 	case '(':
 		token = .LPAREN //todo: need to fix function declaration naming. lparen does currently only works when there is a space between the function name and the parenthesis
 	case ')':
 		token = .RPAREN
 	case '[':
-		token = .LBRACKET
+		token = .LSQBRACKET
 	case ']':
-		token = .RBRACKET
+		token = .RSQBRACKET
 	case ',':
 		token = .COMMA
 	case '.':
@@ -114,32 +143,33 @@ read_identifier :: proc(lexicon: ^types.Lexer) -> string {
 //Looks up the keyword in the input string
 lookup_identifier :: proc(ident: string) -> types.Token {
 	using types
-	switch strings.to_lower(ident) {
-	case "is":
-		return .IS
-	case "ensure":
-		return .ENSURE
+	// Remove the strings.to_lower call to make keywords case-sensitive
+	switch ident {
+	case "=":
+		return .EQUALS
+	case "const":
+		return .CONST
 	case "now":
 		return .NOW
-	case "plus":
+	case "+":
 		return .PLUS
-	case "minus":
+	case "-":
 		return .MINUS
-	case "times":
+	case "*":
 		return .TIMES
-	case "divide":
+	case "/":
 		return .DIVIDE
-	case "mod":
+	case "%":
 		return .MOD
-	case "equals":
-		return .EQUAL
-	case "gthan":
+	case "==":
+		return .EQUAL_TO
+	case ">":
 		return .GTHAN
-	case "lthan":
+	case "<":
 		return .LTHAN
-	case "gthaneq":
+	case ">=":
 		return .GTHANEQ
-	case "lthaneq":
+	case "<=":
 		return .LTHANEQ
 	case "and":
 		return .AND
@@ -163,24 +193,22 @@ lookup_identifier :: proc(ident: string) -> types.Token {
 		return .EVENT
 	case "stop":
 		return .STOP
+	case "go-on":
+	return .GO_ON
 	case "do":
 		return .DO
-	case "give":
-		return .GIVE
 	case "true", "false":
 		return .BOOLEAN
-	case "number":
+	case "Number":
 		return .NUMBER
-	case "string":
+	case "String":
 		return .STRING
-	case "float":
+	case "Float":
 		return .FLOAT
-	case "nothing":
-		return .NOTHING
+	case "NULL":
+		return .NULL
 	case "return":
 		return .RETURN
-	case "returns":
-		return .RETURNS
 	case:
 		return .IDENTIFIER
 	}
@@ -199,63 +227,56 @@ get_identifier_name :: proc(lexicon: ^types.Lexer) -> string {
 	return lexicon.last_identifier
 }
 
-//returns the literal value of the current token
 get_current_token_literal :: proc(lexicon: ^types.Lexer) -> string {
 	#partial switch lexicon.last_token {
 	case .IDENTIFIER:
 		return lexicon.last_identifier
-	case .ENSURE:
-		return "ensure" //constant declaration
-	case .IS:
-		return "is" //variable declaration
+	case .CONST:
+		return "const"
+	case .EQUALS:
+		return "="
 	case .NOW:
-		return "now" //reassignment
+		return "now"
 	case .DO:
-		return "do" //function declaration
-	case .LPAREN:
-		return "("
-	case .RPAREN:
-		return ")"
-	case .LBRACE:
-		return "{"
-	case .RBRACE:
-		return "}"
-	case .SEMICOLON:
-		return ";"
-	case .RETURN:
-        return "return"
-    case .RETURNS:
-        return "returns"
-	case .NUMBER:
-		if lexicon.last_number == 0 {
-			return "Type 'number' or value '0'"
-		}
-		// todo: not a huge deal but when a var/const is declared with explicit type,
-		//the return value of the token 'number' literally returns the number 0.
-		return fmt.tprintf("%d", lexicon.last_number)
-	case .STRING:
-		if lexicon.last_string == "" {
-			return "Type 'string' or value ''"
-		}
-		//todo: same thing as above, but with strings
-		return lexicon.last_string
-	case .QUOTE:
-		return fmt.tprintf("%c", lexicon.ch)
+		return "do"
+	case .RETURNS:
+		return ">>>"
 	case .PLUS:
-		return "plus"
+		return "+"
 	case .MINUS:
-		return "minus"
+		return "-"
 	case .TIMES:
-		return "times"
+		return "*"
 	case .DIVIDE:
-		return "divide"
+		return "/"
 	case .MOD:
-		return "mod"
+		return "%"
+	case .RPAREN:
+	   return ")"
+	case .LPAREN:
+	   return "("
+	case .RCBRACE:
+	   return "}"
+	case .LCBRACE:
+	   return "{"
+	case .RSQBRACKET:
+	   return "]"
+	case .LSQBRACKET:
+	   return "["
+	// Add type tokens
+	case .NUMBER:
+		return "Number"
+	case .STRING:
+		return "String"
+	case .FLOAT:
+		return "Float"
+	case .BOOLEAN:
+		return "Boolean"
+	case .NULL:
+		return "Null"
 	case:
-		// return fmt.tprintf("%c", lexicon.ch)
 		return "ERROR. INVALID TOKEN or TOKEN NOT APPLIED TO get_current_token_literal"
 	}
-
 }
 
 read_number :: proc(lexicon: ^types.Lexer) -> int {

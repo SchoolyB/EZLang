@@ -6,8 +6,13 @@ import "../core/types"
 import "core:fmt"
 
 main :: proc() {
-	input := `do main () returns number {}
-	};`
+	input := `do main () >>> Number {
+
+	Number x = 1;
+
+	}
+
+	`
 
 
 	l := lexer.new_lexer(input)
@@ -26,11 +31,11 @@ main :: proc() {
 		#partial switch token {
 		case .IDENTIFIER:
 			fmt.printfln("Token: Identifier found, Value: %v", lexer.get_identifier_name(l))
-		case .NUMBER, .STRING, .BOOLEAN, .FLOAT, .NOTHING:
+		case .NUMBER, .STRING, .BOOLEAN, .FLOAT, .NULL:
 			fmt.printfln("Token: Literal found, Value: %v", lexer.get_current_token_literal(l))
-		case .DO, .ENSURE, .IS, .NOW, .PLUS, .MINUS, .TIMES, .DIVIDE:
+		case .DO, .CONST, .NOW, .EQUALS, .OTHERWISE, .CHECK, .EVENT, .WHILE, .UNTIL, .STOP, .GO_ON :
 			fmt.printfln("Token: Keyword found, Value: %v ", lexer.get_current_token_literal(l))
-		case:
+		case :
 			fmt.printfln("Token: Symbol found, Value: %v", lexer.get_current_token_literal(l))
 		}
 	}

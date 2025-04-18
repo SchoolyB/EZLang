@@ -5,15 +5,15 @@ Token :: enum {
 	//end of file
 	EOF,
 	//keywords
-	IS, //used in variable declarations same as =
-	ENSURE, //used to declare a constant variable
+	EQUALS,
+	CONST, //used to declare a constant variable
 	NOW, //used to re-assign a variables value
 	PLUS, //+
 	MINUS, //-
 	TIMES, //*
 	DIVIDE, // /
 	MOD, // %
-	EQUAL, // ==
+	EQUAL_TO, // ==
 	NEQUAL, // !=
 	GTHAN, // >
 	LTHAN, // <
@@ -30,20 +30,20 @@ Token :: enum {
 	CHECK, //switch
 	EVENT, //case
 	STOP, //break
+	GO_ON, //go-on
 	DO, //used do declare a function
-	RETURNS, //used to declare the return type of a function
+	RETURNS, // used to assign a functions return type e.g  >>> String
 	RETURN, //used to return a value from a function
 	WITH, //used to declare a function parameter
-	GIVE, // same as return
 	//usual symbols
 	SEMICOLON, // ;
 	COLON, // :
-	LBRACE, // {
-	RBRACE, // }
+	LCBRACE, // {
+	RCBRACE, // }
 	LPAREN, // (
 	RPAREN, // )
-	LBRACKET, // [
-	RBRACKET, // ]
+	LSQBRACKET, // [
+	RSQBRACKET, // ]
 	COMMA, // ,
 	DOT, // .
 	QUOTE, // "
@@ -55,7 +55,7 @@ Token :: enum {
 	STRING, //string
 	FLOAT, //float
 	BOOLEAN, //boolean
-	NOTHING, //nil or null
+	NULL, //nil or null
 	//illegal token
 	ILLEGAL,
 
