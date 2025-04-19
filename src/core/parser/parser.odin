@@ -33,20 +33,19 @@ parse_program :: proc(p: ^types.Parser) -> ^types.Program {
 	program := new(types.Program)
 	program.statements = make([dynamic]^types.Statement)
 
-	fmt.println("DEBUG: Starting program parse")
+	// fmt.println("DEBUG: Starting program parse") //debugging
 	for p.currentToken != .EOF {
-		// fmt.printf("DEBUG: Processing token: %v\n", p.currentToken)
 		stmt := parse_statement(p)
 		if stmt != nil {
 			append(&program.statements, stmt)
-			fmt.println("DEBUG: Statement added successfully")
+			// fmt.println("DEBUG: Statement added successfully") //debugging
 		} else {
-			fmt.println("DEBUG: Statement was nil")
+			// fmt.println("DEBUG: Statement was nil") //debugging
 		}
 		// Only advance token if it wasn't already advanced by the statement parser
 		if p.currentToken != .EOF {
 			p.currentToken = lexer.next_token(p.lexicon)
-			fmt.printf("DEBUG: Advanced to next token: %v\n", p.currentToken)
+			// fmt.printf("DEBUG: Advanced to next token: %v\n", p.currentToken) //debugging
 		}
 	}
 
@@ -149,25 +148,30 @@ parse_variable_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 		parser.currentToken = lexer.next_token(parser.lexicon)
 		fmt.printf("DEBUG: After identifier, current token is: %v\n", parser.currentToken)
 
-		// Expect IS
+		// Expect =
 		if parser.currentToken !=  .EQUALS {
 			fmt.printf("Error: Expected '=' after identifier, got %v\n", parser.currentToken)
 			return nil
 		}
 
-		parser.currentToken = lexer.next_token(parser.lexicon)
-		fmt.printf("DEBUG: After IS token, current token is: %v\n", parser.currentToken)
 
-		// Parse the expression after IS
+		fmt.printf("DEBUG: After = token, current token is: %v\n", parser.currentToken)
+
+		// Parse the expression after =
 		stmt.value = parse_expression(parser)
 		if stmt.value == nil {
 			fmt.println("Error: Invalid expression")
 			return nil
 		}
 
+
 		// Handle semicolon
 		if parser.currentToken == .SEMICOLON {
 			parser.currentToken = lexer.next_token(parser.lexicon)
+			fmt.printf("DEBUG: After semicolon, current token is: %v\n", parser.currentToken)
+		} else if parser.peekToken == .SEMICOLON {
+			parser.currentToken = lexer.next_token(parser.lexicon)
+			parser.currentToken = lexer.next_token(parser.lexicon) // Consume the semicolon
 			fmt.printf("DEBUG: After semicolon, current token is: %v\n", parser.currentToken)
 		}
 
@@ -221,9 +225,12 @@ parse_constant_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 		return nil
 	}
 
-	//if the next token is a semicolon, consume it
-	if parser.peekToken == .SEMICOLON {
+	// Check for semicolon in current token or peek token
+	if parser.currentToken == .SEMICOLON {
 		parser.currentToken = lexer.next_token(parser.lexicon)
+	} else if parser.peekToken == .SEMICOLON {
+		parser.currentToken = lexer.next_token(parser.lexicon)
+		parser.currentToken = lexer.next_token(parser.lexicon) // Consume the semicolon
 	}
 
 	return stmt
@@ -264,24 +271,24 @@ parse_reassignment_statement :: proc(parser: ^types.Parser) -> ^types.Statement 
 	}
 	parser.currentToken = lexer.next_token(parser.lexicon) // Consume 'IS' token
 
-
 	stmt.value = parse_expression(parser)
 	if stmt.value == nil {
 		fmt.println("Error: Invalid expression in reassignment statement")
 		return nil
 	}
 
-
-	if parser.peekToken == .SEMICOLON {
+	// Check for semicolon in current token or peek token
+	if parser.currentToken == .SEMICOLON {
 		parser.currentToken = lexer.next_token(parser.lexicon)
+	} else if parser.peekToken == .SEMICOLON {
+		parser.currentToken = lexer.next_token(parser.lexicon)
+		parser.currentToken = lexer.next_token(parser.lexicon) // Consume the semicolon
 	}
 
 	return stmt
-
 }
 
 
-//functions are gonna be a bit fucky.
 parse_function_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 	stmt := new(types.FunctionDeclaration)
 	stmt.token = parser.currentToken // DO token
@@ -293,10 +300,20 @@ parse_function_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 		return nil
 	}
 	stmt.name = lexer.get_identifier_name(parser.lexicon)
+	fmt.println(stmt.name) //debugging
+	fmt.println("parser.currentToken2: ", parser.currentToken) //debugging
 	parser.currentToken = lexer.next_token(parser.lexicon)
+
+	fmt.println("parser.currentToken 2: ", parser.currentToken)
+	// Check if we need to look ahead for a left parenthesis without a space
+	if parser.currentToken != .LPAREN && parser.peekToken == .LPAREN {
+	fmt.println("HEY FUCKO1")
+		parser.currentToken = lexer.next_token(parser.lexicon) // Move to the LPAREN
+	}
 
 	// Handle parameters
 	if parser.currentToken == .LPAREN {
+	fmt.println("HEY FUCKO2")
 	    parser.currentToken = lexer.next_token(parser.lexicon)
 	    if parser.currentToken != .RPAREN {
 	        // Parse parameter list
@@ -331,9 +348,10 @@ parse_function_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 	}
 
 	// Parse function body
+	parser.currentToken = lexer.next_token(parser.lexicon)
 	if parser.currentToken != .LCBRACE {
 		fmt.printf(
-			"Error: Expected '{' after function declaration, got %v\n",
+			"Error: Expected ')' after function declaration, got %v\n",
 			parser.currentToken,
 		)
 		return nil

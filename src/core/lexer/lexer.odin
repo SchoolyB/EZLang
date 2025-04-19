@@ -143,8 +143,9 @@ read_identifier :: proc(lexicon: ^types.Lexer) -> string {
 //Looks up the keyword in the input string
 lookup_identifier :: proc(ident: string) -> types.Token {
 	using types
-	// Remove the strings.to_lower call to make keywords case-sensitive
 	switch ident {
+	case ";":
+	   return .SEMICOLON
 	case "=":
 		return .EQUALS
 	case "const":
@@ -207,6 +208,8 @@ lookup_identifier :: proc(ident: string) -> types.Token {
 		return .FLOAT
 	case "NULL":
 		return .NULL
+	case ">>>":
+	return .RETURNS
 	case "return":
 		return .RETURN
 	case:
@@ -241,6 +244,8 @@ get_current_token_literal :: proc(lexicon: ^types.Lexer) -> string {
 		return "do"
 	case .RETURNS:
 		return ">>>"
+	case .RETURN:
+	   return  "return"
 	case .PLUS:
 		return "+"
 	case .MINUS:
@@ -263,6 +268,8 @@ get_current_token_literal :: proc(lexicon: ^types.Lexer) -> string {
 	   return "]"
 	case .LSQBRACKET:
 	   return "["
+	case .SEMICOLON:
+	return ";"
 	// Add type tokens
 	case .NUMBER:
 		return "Number"
