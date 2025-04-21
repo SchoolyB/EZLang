@@ -7,6 +7,7 @@ import "core:strconv"
 import "core:strings"
 import "../../utils"
 
+
 new_parser :: proc(lexicon: ^types.Lexer) -> ^types.Parser {
 	parser := new(types.Parser)
 	parser.lexicon = lexicon
@@ -57,13 +58,14 @@ parse_program :: proc(p: ^types.Parser) -> ^types.Program {
 parse_statement :: proc(p: ^types.Parser) -> ^types.Statement {
 	#partial switch p.currentToken {
 	case .DO:
-		// fmt.println("p: ", p) //debugging
 		return parse_function_declaration(p)
 	case .INT, .STRING, .FLOAT, .BOOL, .NULL:
-		// fmt.println("p: ", p) //debugging
 		// if p.inFunction {
-			return parse_variable_declaration(p)
+			return parse_explicit_variable_declaration(p)
 		// }
+	case .IDENTIFIER:
+		// Handle implicit variable declarations (e.g., name = "Marshall";)
+		return parse_implicit_variable_declaration(p)
 	case .CONST:
 		return parse_constant_declaration(p)
 	case .NOW:
@@ -72,11 +74,13 @@ parse_statement :: proc(p: ^types.Parser) -> ^types.Statement {
 		return parse_if_statement(p)
 	case .WHILE:
 		return parse_while_statement(p)
+	case:
+	       utils.show_critical_error(fmt.tprintf("Invalid token found in statement: Got token: %v", p.currentToken))
+	   break
 	}
 	return nil
 }
 //parses infix expressions such as operators between two expressions
-//like 1 plus 2, 3 times 4, etc.
 parse_expression :: proc(parser: ^types.Parser) -> ^types.Expression {
 	left := parse_primary_expression(parser)
 	if left == nil {
@@ -111,10 +115,12 @@ parse_primary_expression :: proc(parser: ^types.Parser) -> ^types.Expression {
 	case .IDENTIFIER:
 		return parse_identifier(parser)
 	case .INT:
-		return parse_number_literal(parser)
+		return parse_integer_literal(parser)
 	case .STRING:
-		fmt.println("string literal primary expression found") //debugging
 		return parse_string_literal(parser)
+	case .BOOL:
+	return parse_bool_literal(parser)
+
 	case:
 		// Handle error: unexpected token
 		return nil
@@ -122,14 +128,21 @@ parse_primary_expression :: proc(parser: ^types.Parser) -> ^types.Expression {
 }
 //looks for and parses a variable declaration
 //Variables can be declare in many ways.
-//1 - Explicitly typed without a value assigned`number x;`
-//2 - Typed or untyped with a value assigned `number x is 10;` or `x is 10;`
-//3 - Declared before hand then re-assigned later `number x; x is 10;` or `number x is; now x is 10;`
-//4 - Declared as a constant `const x is 10;`
-parse_variable_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
+//1 - Explicitly typed without a value assigned`int x;`
+//2 - Typed or untyped with a value assigned `int x = 10;` or `x = 10;`
+//3 - Declared before hand then re-assigned later `int x; x = 10;` or `int x; now x = 10;`
+//4 - Declared as a constant `const X = 10;` see parse_constant_declaration()
+parse_explicit_variable_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 	stmt := new(types.VariableDeclaration)
 	stmt.token = parser.currentToken
 	stmt.isConst = false
+
+	//Check if the type is capitalized. if so continue, If not throw error
+	typeName:= lexer.get_type_name(parser.currentToken)
+	if !is_first_letter_capital(typeName){
+	   utils.show_critical_error(fmt.tprintf("Type: %s is not a valid type", typeName))
+	   return nil
+	}
 
 	// Check for explicit type
 	#partial switch (parser.currentToken) {
@@ -142,8 +155,9 @@ parse_variable_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 		// Dont really need this case here but I think it helps understand whats happening - Marshall
 	}
 
+	fmt.println("Showing parser.currentToken: ", parser.currentToken)
 	if parser.currentToken != .IDENTIFIER {
-		utils.show_critical_error(fmt.tprintf("Expected identifier in variabel declartion got %v", parser.currentToken))
+		utils.show_critical_error(fmt.tprintf("Expected identifier in variable declartion got %v", parser.currentToken))
 		return nil
 	}
 
@@ -164,6 +178,42 @@ parse_variable_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 		}
 
 fmt.println(stmt)
+
+	return stmt
+}
+
+// Handles parsing of implicit variable declarations (e.g., name = "Marshall";)
+parse_implicit_variable_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
+	stmt := new(types.VariableDeclaration)
+	stmt.token = parser.currentToken
+	stmt.isConst = false
+
+	// Save the identifier name
+	stmt.name = lexer.get_identifier_name(parser.lexicon)
+	parser.currentToken = lexer.next_token(parser.lexicon)
+
+	// Expect equals sign
+	if parser.currentToken != .EQUALS {
+		utils.show_critical_error(fmt.tprintf("Expected '=' after identifier in variable declaration, got %v", parser.currentToken))
+		return nil
+	}
+
+	// Consume equals token
+	parser.currentToken = lexer.next_token(parser.lexicon)
+
+	// Parse the expression that is assigned to the variable
+	stmt.value = parse_expression(parser)
+	if stmt.value == nil {
+		utils.show_critical_error("Invalid expression in variable declaration")
+		return nil
+	}
+
+	// Check for semicolon
+	if semicolon_ends_statement(parser.currentToken) {
+		parser.currentToken = lexer.next_token(parser.lexicon)
+	} else {
+		return nil
+	}
 
 	return stmt
 }
@@ -434,7 +484,7 @@ parse_identifier :: proc(parser: ^types.Parser) -> ^types.Expression {
 	return ident
 }
 
-parse_number_literal :: proc(parser: ^types.Parser) -> ^types.Expression {
+parse_integer_literal :: proc(parser: ^types.Parser) -> ^types.Expression {
 	literal := new(types.NumberLiteral)
 	literal.token = parser.currentToken
 	literal.value = parser.lexicon.lastNumber
@@ -461,3 +511,13 @@ semicolon_ends_statement :: proc(tok: types.Token) -> bool {
 		}
 		return true
 	}
+
+
+
+	is_first_letter_capital :: proc(s: string) -> bool {
+		if len(s) == 0 {
+			return false
+		}
+		// Check if first character is in range of uppercase ASCII letters
+		return s[0] >= 'A' && s[0] <= 'Z'
+}
