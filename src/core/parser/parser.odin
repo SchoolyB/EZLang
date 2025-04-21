@@ -57,7 +57,7 @@ parse_statement :: proc(p: ^types.Parser) -> ^types.Statement {
 	case .DO:
 		// fmt.println("p: ", p) //debugging
 		return parse_function_declaration(p)
-	case .NUMBER, .STRING, .FLOAT, .BOOLEAN, .NULL, .EQUALS:
+	case .INT, .STRING, .FLOAT, .BOOL, .NULL, .EQUALS:
 		// fmt.println("p: ", p) //debugging
 		if p.inFunction { 	//only here becuase functions can have a return type in its declaration
 			return parse_variable_declaration(p)
@@ -108,7 +108,7 @@ parse_primary_expression :: proc(parser: ^types.Parser) -> ^types.Expression {
 	#partial switch parser.currentToken {
 	case .IDENTIFIER:
 		return parse_identifier(parser)
-	case .NUMBER:
+	case .INT:
 		return parse_number_literal(parser)
 	case .STRING:
 		fmt.println("string literal primary expression found") //debugging
@@ -130,10 +130,10 @@ parse_variable_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 	stmt.isConst = false
 
 	// Handle type-first declarations
-	if parser.currentToken == .NUMBER ||
+	if parser.currentToken == .INT ||
 	   parser.currentToken == .STRING ||
 	   parser.currentToken == .FLOAT ||
-	   parser.currentToken == .BOOLEAN {
+	   parser.currentToken == .BOOL {
 		stmt.type = lexer.get_type_name(parser.currentToken)
 		parser.currentToken = lexer.next_token(parser.lexicon)
 		fmt.printf("DEBUG: After type token, current token is: %v\n", parser.currentToken)
@@ -146,7 +146,7 @@ parse_variable_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 
 		stmt.name = lexer.get_identifier_name(parser.lexicon)
 		parser.currentToken = lexer.next_token(parser.lexicon)
-		fmt.printf("DEBUG: After identifier, current token is: %v\n", parser.currentToken)
+		fmt.printf("DEBUG: After identifierk, current token is: %v\n", parser.currentToken)
 
 		// Expect = or ;
 		if parser.currentToken !=  .EQUALS && parser.currentToken != .SEMICOLON{
@@ -176,7 +176,7 @@ parse_constant_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 
 	// Check for explicit type
 	#partial switch (parser.currentToken) {
-	case .NUMBER, .STRING, .FLOAT, .BOOLEAN, .NULL:
+	case .INT, .STRING, .FLOAT, .BOOL, .NULL:
 		stmt.type = lexer.get_type_name(parser.currentToken)
 		parser.currentToken = lexer.next_token(parser.lexicon)
 	case:
@@ -193,14 +193,15 @@ parse_constant_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 	parser.currentToken = lexer.next_token(parser.lexicon) // Consume identifier //equals???
 
 
+	fmt.println("parser.peekToken: ",parser.peekToken)
+	fmt.println("stmt.name: ", stmt.name)
 	fmt.println("parser.currentToken: ", parser.currentToken)
 	// Check if semicolon immediately AFTER constant IDENTIFIER
 	if check_statement_ends_with_semicolon(parser.currentToken) == 0 {
 	   parser.currentToken = lexer.next_token(parser.lexicon)
         return stmt
 	 } else {
-		fmt.println("hi")
-		return nil
+		  return nil
 		}
 
 
@@ -248,7 +249,7 @@ parse_reassignment_statement :: proc(parser: ^types.Parser) -> ^types.Statement 
 
 	#partial switch parser.currentToken {
 	// Check for explicit type
-	case .STRING, .NUMBER, .FLOAT, .BOOLEAN, .NULL:
+	case .STRING, .INT, .FLOAT, .BOOL, .NULL:
 		//consume the type token
 		parser.currentToken = lexer.next_token(parser.lexicon)
 	case:
@@ -328,7 +329,7 @@ parse_function_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 		stmt.returnStatment = new(types.ReturnStatement)
 
 		#partial switch parser.currentToken {
-		case .NUMBER, .STRING, .FLOAT, .BOOLEAN, .NULL:
+		case .INT, .STRING, .FLOAT, .BOOL, .NULL:
 			stmt.returnStatment.type = lexer.get_type_name(parser.currentToken)
 			parser.currentToken = lexer.next_token(parser.lexicon)
 		case:
@@ -383,7 +384,7 @@ parse_parameter_list :: proc(parser: ^types.Parser) -> [dynamic]^types.Parameter
 
         // Check for type
         #partial switch parser.currentToken {
-        case .NUMBER, .STRING, .FLOAT, .BOOLEAN, .NULL:
+        case .INT, .STRING, .FLOAT, .BOOL, .NULL:
             param.type = lexer.get_type_name(parser.currentToken)
             parser.currentToken = lexer.next_token(parser.lexicon)
         case:

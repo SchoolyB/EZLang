@@ -10,10 +10,10 @@ A programming language designed to be accessible for programmers of all levels.
 ## 2. Data Types
 | Type      | Description            | Example                |
 | --------- | ---------------------- | ---------------------- |
-| Number    | Integer values         | `Number x = 42;`       |
+| Int    | Integer values         | `Int x = 42;`       |
 | Float     | Floating-point numbers | `Float x = 3.14;`    |
 | String    | Text values            | `String x = "hello";`  |
-| Boolean   | True/false values      | `Boolean x = true;`    |
+| Bool   | True/false values      | `Boolean x = true;`    |
 | Null   | Null type         | `Null`              |
 
 ## 3. Variable Declaration and Assignment
@@ -28,14 +28,14 @@ Example" `String name;`
 
 // Explicit typing
 `String name = "John";`
-`Number age = 21;`
+`Int age = 21;`
 
 
 
 // Constants
 const x = 100; // implicitly typed constant with value
 const string name; // explicit typed constnant without value
-const Number x = 0; // explicit typed constant with value
+const Int x = 0; // explicit typed constant with value
 ```
 
 ### Variable Reassignment
@@ -101,7 +101,7 @@ until (x == 1) {
 }
 
 // For loop
-for (Number i; i < 0; i++) {
+for (Int i; i < 0; i++) {
     // code
 }
 
@@ -139,19 +139,19 @@ do function_name(){
 }
 
 // With parameters, no return
-do function_name(Number x, String name) {
+do function_name(Int x, String name) {
     // code
 }
 
 // With parameters and explicit return type
-do function_name(Float y, Number x)  >>> Boolean {
+do function_name(Float y, Int x)  >>> Boolean {
     // code
     return true;
 }
 
 
 //No parameters, with explicit return type
-do main() returns Number {
+do main() returns Int {
     // code
     return 0;
 }
@@ -188,15 +188,15 @@ result, _ = function_name(21, "John");
 #import "ez:std"
 #import "ez:io"
 
-Number a = 5; //Global variable declaration and assignment
-Number b = 10;
+Int a = 5; //Global variable declaration and assignment
+Int b = 10;
 
-do add(Number x, Number y) returns Number {
-    Number total = x + y;
+do add(Int x, Int y) returns Int {
+    Int total = x + y;
     return total;
 }
 
-do main() returns Number {
+do main() returns Int {
     result = std.add(a, b); //accessing a function from the std module
     io.display(result);  // output: 20     //accessing a function from the io module
     return result;
