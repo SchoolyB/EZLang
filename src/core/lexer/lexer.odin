@@ -30,13 +30,13 @@ read_char :: proc(lexicon: ^types.Lexer) {
 
 get_type_name :: proc(token: types.Token) -> string {
 	#partial switch token {
-	case .NUMBER:
-		return "Number"
+	case .INT:
+		return "Int"
 	case .STRING:
 		return "String"
 	case .FLOAT:
 		return "Float"
-	case .BOOLEAN:
+	case .BOOL:
 		return "Boolean"
 	case .NULL:
 		return "Null"
@@ -97,7 +97,7 @@ next_token :: proc(lexicon: ^types.Lexer) -> types.Token {
 	case '}':
 		token = .RCBRACE
 	case '(':
-		token = .LPAREN 
+		token = .LPAREN
 	case ')':
 		token = .RPAREN
 	case '[':
@@ -120,17 +120,17 @@ next_token :: proc(lexicon: ^types.Lexer) -> types.Token {
 			token = lookup_identifier(identifier)
 		} else if is_digit(lexicon.currentChar) {
 			lexicon.lastNumber = read_number(lexicon)
-			token = .NUMBER
+			token = .INT
 		} else {
 			token = .ILLEGAL
 		}
 	}
 
 	// Don't advance the character here if we've already advanced in read_identifier
-	if token != .IDENTIFIER && token != .NUMBER && token != .STRING {
+	if token != .IDENTIFIER && token != .INT && token != .STRING {
 		read_char(lexicon)
 	}
-	
+
 	lexicon.lastToken = token
 	return token
 }
@@ -141,7 +141,7 @@ read_identifier :: proc(lexicon: ^types.Lexer) -> string {
 	for lexicon.position < len(lexicon.input) && (is_letter(lexicon.currentChar) || is_digit(lexicon.currentChar)) {
 		read_char(lexicon)
 	}
-	
+
 	// Don't advance past special characters like semicolons
 	// This ensures we don't consume the semicolon as part of the identifier
 	return lexicon.input[start_position:lexicon.position]
@@ -206,9 +206,9 @@ lookup_identifier :: proc(ident: string) -> types.Token {
 	case "do":
 		return .DO
 	case "true", "false":
-		return .BOOLEAN
-	case "Number":
-		return .NUMBER
+		return .BOOL
+	case "Int":
+		return .INT
 	case "String":
 		return .STRING
 	case "Float":
@@ -278,13 +278,13 @@ get_current_token_literal :: proc(lexicon: ^types.Lexer) -> string {
 	case .SEMICOLON:
 	return ";"
 	// Add type tokens
-	case .NUMBER:
-		return "Number"
+	case .INT:
+		return "Int"
 	case .STRING:
 		return "String"
 	case .FLOAT:
 		return "Float"
-	case .BOOLEAN:
+	case .BOOL:
 		return "Boolean"
 	case .NULL:
 		return "Null"

@@ -5,6 +5,7 @@ import "../types"
 import "core:fmt"
 import "core:strconv"
 import "core:strings"
+import "../../utils"
 
 new_parser :: proc(lexicon: ^types.Lexer) -> ^types.Parser {
 	parser := new(types.Parser)
@@ -41,6 +42,7 @@ parse_program :: proc(p: ^types.Parser) -> ^types.Program {
 			// fmt.println("DEBUG: Statement added successfully") //debugging
 		} else {
 			// fmt.println("DEBUG: Statement was nil") //debugging
+			return nil
 		}
 		// Only advance token if it wasn't already advanced by the statement parser
 		if p.currentToken != .EOF {
@@ -179,59 +181,37 @@ parse_constant_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 	case .INT, .STRING, .FLOAT, .BOOL, .NULL:
 		stmt.type = lexer.get_type_name(parser.currentToken)
 		parser.currentToken = lexer.next_token(parser.lexicon)
+		break
 	case:
-	//implicitly types the identifier
-	// do nothing
+		//Default case assumes the type is implied
+		// Dont really need this case here but I think it helps understand whats happening - Marshall
 	}
 
 	if parser.currentToken != .IDENTIFIER {
-		fmt.printf("Error: Expected identifier after 'CONST', got %v\n", parser.currentToken)
+		utils.show_critical_error(fmt.tprintf("Expected identifier after 'CONST', got %v", parser.currentToken))
 		return nil
 	}
 
 	stmt.name = lexer.get_identifier_name(parser.lexicon) // Get identifier name
-	parser.currentToken = lexer.next_token(parser.lexicon) // Consume identifier //equals???
+	parser.currentToken = lexer.next_token(parser.lexicon) // Consume identifier
 
 
-	fmt.println("parser.peekToken: ",parser.peekToken)
-	fmt.println("stmt.name: ", stmt.name)
-	fmt.println("parser.currentToken: ", parser.currentToken)
-	// Check if semicolon immediately AFTER constant IDENTIFIER
-	if check_statement_ends_with_semicolon(parser.currentToken) == 0 {
-	   parser.currentToken = lexer.next_token(parser.lexicon)
-        return stmt
-	 } else {
-		  return nil
-		}
-
-
-	//Next check if the current token is an = token.
-	//if not throw error becuase = is needed to assign a value
-	if parser.currentToken != .EQUALS {
-		fmt.printf("Error: Expected '=' or ';' after identifier, got %v\n", parser.currentToken)
+	//If no equals is found then constant is invalid
+	if parser.currentToken != .EQUALS{
+	    utils.show_critical_error("Constant declarations must have a value")
 		return nil
 	}
 
 	//Consume the EQUALS token
 	parser.currentToken = lexer.next_token(parser.lexicon)
 
-	//Go on to next token and anticipate SEMICOLON
-	// parser.currentToken = lexer.next_token(parser.lexicon)
-	fmt.println("parser.currentToken:  ", parser.currentToken)
-
-	// Check if semicolon immediately AFTER constant EQUALS
-	if check_statement_ends_with_semicolon(parser.currentToken) == -1 {
-		return nil
-	 }
-
-
 	//Parse the expression that is assigned to the constant
 	stmt.value = parse_expression(parser)
-	if stmt.value == nil {
-		fmt.println("Error: Invalid expression in constant declaration")
-		return nil
-	}
-
+	   if stmt.value == nil {
+			fmt.println("Error: Invalid expression in constant declaration")
+			fmt.println("Its possible there is no value assigned to constant declaration")
+			return nil
+	   }
 
 	return stmt
 }

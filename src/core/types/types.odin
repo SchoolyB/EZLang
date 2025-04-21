@@ -51,10 +51,10 @@ Token :: enum {
 	//identifiers
 	IDENTIFIER,
 	//types
-	NUMBER, //integer
+	INT, //integer
 	STRING, //string
 	FLOAT, //float
-	BOOLEAN, //boolean
+	BOOL, //boolean
 	NULL, //nil or null
 	//illegal token
 	ILLEGAL,
