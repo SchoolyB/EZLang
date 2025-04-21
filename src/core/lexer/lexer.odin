@@ -22,9 +22,9 @@ import "core:strings"
  * File: lexer.odin
  * Author: Marshall A Burns
  * GitHub: @SchoolyB
- * Description: Parser implementation for the EZ programming language.
- * This file contains the core parsing logic that transforms tokens into
- * an abstract syntax tree (AST).
+ * Description: This file contains the lexer implementation the EZ programming language.
+ * The lexer is responsible for breaking down the input string into tokens, which are then
+ * used by the parser to build the abstract syntax tree.
  */
 
 
