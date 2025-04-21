@@ -13,7 +13,7 @@ A programming language designed to be accessible for programmers of all levels.
 | Int    | Integer values         | `Int x = 42;`       |
 | Float     | Floating-point numbers | `Float x = 3.14;`    |
 | String    | Text values            | `String x = "hello";`  |
-| Bool   | True/false values      | `Boolean x = true;`    |
+| Bool   | True/false values      | `Bool x = true;`    |
 | Null   | Null type         | `Null`              |
 
 ## 3. Variable Declaration and Assignment
@@ -144,7 +144,7 @@ do function_name(Int x, String name) {
 }
 
 // With parameters and explicit return type
-do function_name(Float y, Int x)  >>> Boolean {
+do function_name(Float y, Int x)  >>> Bool {
     // code
     return true;
 }
