@@ -38,17 +38,15 @@ parse_program :: proc(p: ^types.Parser) -> ^types.Program {
 	// fmt.println("DEBUG: Starting program parse") //debugging
 	for p.currentToken != .EOF {
 		stmt := parse_statement(p)
+		defer free(stmt)
 		if stmt != nil {
 			append(&program.statements, stmt)
-			// fmt.println("DEBUG: Statement added successfully") //debugging
 		} else {
-			// fmt.println("DEBUG: Statement was nil") //debugging
 			return nil
 		}
 		// Only advance token if it wasn't already advanced by the statement parser
 		if p.currentToken != .EOF {
 			p.currentToken = lexer.next_token(p.lexicon)
-			// fmt.printf("DEBUG: Advanced to next token: %v\n", p.currentToken) //debugging
 		}
 	}
 
@@ -56,6 +54,7 @@ parse_program :: proc(p: ^types.Parser) -> ^types.Program {
 }
 //parses a statement
 parse_statement :: proc(p: ^types.Parser) -> ^types.Statement {
+    fmt.println("p.currentToken: ",p.currentToken)
 	#partial switch p.currentToken {
 	case .DO:
 		return parse_function_declaration(p)
@@ -75,8 +74,7 @@ parse_statement :: proc(p: ^types.Parser) -> ^types.Statement {
 	case .WHILE:
 		return parse_while_statement(p)
 	case:
-	       utils.show_critical_error(fmt.tprintf("Invalid token found in statement: Got token: %v", p.currentToken))
-	   break
+	       utils.show_critical_error(fmt.tprintf("Invalid token found in statement: Got token: %v", p.currentToken),#procedure)
 	}
 	return nil
 }
@@ -112,14 +110,14 @@ parse_expression :: proc(parser: ^types.Parser) -> ^types.Expression {
 //parses primary expressions like identifiers, numbers, and strings
 parse_primary_expression :: proc(parser: ^types.Parser) -> ^types.Expression {
 	#partial switch parser.currentToken {
-	case .IDENTIFIER:
-		return parse_identifier(parser)
 	case .INT:
 		return parse_integer_literal(parser)
 	case .STRING:
 		return parse_string_literal(parser)
 	case .BOOL:
-	return parse_bool_literal(parser)
+	   return parse_boolean_literal(parser)
+	case .IDENTIFIER:
+		return parse_identifier(parser)
 
 	case:
 		// Handle error: unexpected token
@@ -140,7 +138,7 @@ parse_explicit_variable_declaration :: proc(parser: ^types.Parser) -> ^types.Sta
 	//Check if the type is capitalized. if so continue, If not throw error
 	typeName:= lexer.get_type_name(parser.currentToken)
 	if !is_first_letter_capital(typeName){
-	   utils.show_critical_error(fmt.tprintf("Type: %s is not a valid type", typeName))
+	   utils.show_critical_error(fmt.tprintf("Type: %s is not a valid type", typeName),#procedure)
 	   return nil
 	}
 
@@ -155,9 +153,8 @@ parse_explicit_variable_declaration :: proc(parser: ^types.Parser) -> ^types.Sta
 		// Dont really need this case here but I think it helps understand whats happening - Marshall
 	}
 
-	fmt.println("Showing parser.currentToken: ", parser.currentToken)
 	if parser.currentToken != .IDENTIFIER {
-		utils.show_critical_error(fmt.tprintf("Expected identifier in variable declartion got %v", parser.currentToken))
+		utils.show_critical_error(fmt.tprintf("Expected identifier in variable declartion got %v", parser.currentToken), #procedure)
 		return nil
 	}
 
@@ -168,16 +165,30 @@ parse_explicit_variable_declaration :: proc(parser: ^types.Parser) -> ^types.Sta
 
 		// Expect = or ;
 		if parser.currentToken !=  .EQUALS && parser.currentToken != .SEMICOLON{
-			utils.show_critical_error(fmt.tprintf("Expected '=' after identifier, got %v\n", parser.currentToken))
+			utils.show_critical_error(fmt.tprintf("Expected '=' after identifier, got %v\n", parser.currentToken),#procedure)
 			return nil
 		}
 
-		// Handle semicolon
-		if parser.currentToken == .SEMICOLON {
-			parser.currentToken = lexer.next_token(parser.lexicon)
+	// Handle assignment if present
+	if parser.currentToken == .EQUALS {
+		parser.currentToken = lexer.next_token(parser.lexicon) // Consume equals token
+
+		// Parse the expression that is assigned to the variable
+		stmt.value = parse_expression(parser)
+		if stmt.value == nil {
+			utils.show_critical_error("Invalid expression in variable declaration",#procedure)
+			return nil
 		}
 
-fmt.println(stmt)
+		// Check for semicolon
+		if !semicolon_ends_statement(parser.currentToken) {
+			return nil
+		}
+		parser.currentToken = lexer.next_token(parser.lexicon) // Consume semicolon
+	} else if parser.currentToken == .SEMICOLON {
+	// Handle semicolon (no assignment)
+		parser.currentToken = lexer.next_token(parser.lexicon) // Consume semicolon
+	}
 
 	return stmt
 }
@@ -194,7 +205,7 @@ parse_implicit_variable_declaration :: proc(parser: ^types.Parser) -> ^types.Sta
 
 	// Expect equals sign
 	if parser.currentToken != .EQUALS {
-		utils.show_critical_error(fmt.tprintf("Expected '=' after identifier in variable declaration, got %v", parser.currentToken))
+		utils.show_critical_error(fmt.tprintf("Expected '=' after identifier in variable declaration, got %v", parser.currentToken),#procedure)
 		return nil
 	}
 
@@ -204,7 +215,7 @@ parse_implicit_variable_declaration :: proc(parser: ^types.Parser) -> ^types.Sta
 	// Parse the expression that is assigned to the variable
 	stmt.value = parse_expression(parser)
 	if stmt.value == nil {
-		utils.show_critical_error("Invalid expression in variable declaration")
+		utils.show_critical_error("Invalid expression in variable declaration",#procedure)
 		return nil
 	}
 
@@ -238,7 +249,7 @@ parse_constant_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 	}
 
 	if parser.currentToken != .IDENTIFIER {
-		utils.show_critical_error(fmt.tprintf("Expected identifier in constant declaration got %v", parser.currentToken))
+		utils.show_critical_error(fmt.tprintf("Expected identifier in constant declaration got %v", parser.currentToken),#procedure)
 		return nil
 	}
 
@@ -249,7 +260,7 @@ parse_constant_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 
 	//If no equals is found then constant is invalid
 	if parser.currentToken != .EQUALS{
-	    utils.show_critical_error("Constant declarations must have a value")
+	    utils.show_critical_error("Constant declarations must have a value",#procedure)
 		return nil
 	}
 
@@ -259,7 +270,7 @@ parse_constant_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 	//Parse the expression that is assigned to the constant
 	stmt.value = parse_expression(parser)
 	   if stmt.value == nil {
-			utils.show_critical_error("Invalid expression in constant declaration")
+			utils.show_critical_error("Invalid expression in constant declaration",#procedure)
 			fmt.println("Its possible there is no value assigned to constant declaration")
 			return nil
 	   }
@@ -485,28 +496,35 @@ parse_identifier :: proc(parser: ^types.Parser) -> ^types.Expression {
 }
 
 parse_integer_literal :: proc(parser: ^types.Parser) -> ^types.Expression {
-	literal := new(types.NumberLiteral)
-	literal.token = parser.currentToken
-	literal.value = parser.lexicon.lastNumber
+	integerLiteral := new(types.NumberLiteral)
+	integerLiteral.token = parser.currentToken
+	integerLiteral.value = parser.lexicon.lastInteger
 	parser.currentToken = lexer.next_token(parser.lexicon)
-	return literal
+	return integerLiteral
 }
 
 parse_string_literal :: proc(parser: ^types.Parser) -> ^types.Expression {
-	literal := new(types.StringLiteral)
-	literal.token = parser.currentToken
-	literal.value = parser.lexicon.lastString
+	stringLiteral := new(types.StringLiteral)
+	stringLiteral.token = parser.currentToken
+	stringLiteral.value = parser.lexicon.lastString
 	parser.currentToken = lexer.next_token(parser.lexicon)
-	return literal
+	return stringLiteral
 }
 
+parse_boolean_literal ::proc(parser: ^types.Parser) -> ^types.Expression{
+    booleanLiteral:= new(types.BooleanLiteral)
+    booleanLiteral.token = parser.currentToken
+    booleanLiteral.value = parser.lexicon.lastBoolean
+    parser.currentToken = lexer.next_token(parser.lexicon)
+    return booleanLiteral
+}
 
 
 
 //Parser Helper functions
 semicolon_ends_statement :: proc(tok: types.Token) -> bool {
 	   if tok != .SEMICOLON{
-				utils.show_critical_error("Statement must end in a semicolon")
+				utils.show_critical_error("Statement must end in a semicolon",#procedure)
 				return false
 		}
 		return true

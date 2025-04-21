@@ -54,7 +54,7 @@ Token :: enum {
 	INT, //integer
 	STRING, //string
 	FLOAT, //float
-	BOOL, //boolean
+	BOOL, //bool
 	NULL, //nil or null
 	//illegal token
 	ILLEGAL,
@@ -75,8 +75,9 @@ Lexer :: struct {
 	readPosition:   int, // Current reading position in input (after current char)
 	currentChar:              byte, // Current character
 	lastIdentifier: string, //last identifier read
-	lastNumber:     int, //last number read
+	lastInteger:     int, //last number read
 	lastString:     string, //last string read
+	lastBoolean: bool,
 	lastToken:      Token, //last token read
 }
 

@@ -37,7 +37,7 @@ get_type_name :: proc(token: types.Token) -> string {
 	case .FLOAT:
 		return "Float"
 	case .BOOL:
-		return "Boolean"
+		return "Bool"
 	case .NULL:
 		return "Null"
 	case:
@@ -119,7 +119,7 @@ next_token :: proc(lexicon: ^types.Lexer) -> types.Token {
 			lexicon.lastIdentifier = identifier
 			token = lookup_identifier(identifier)
 		} else if is_digit(lexicon.currentChar) {
-			lexicon.lastNumber = read_number(lexicon)
+			lexicon.lastInteger = read_number(lexicon)
 			token = .INT
 		} else {
 			token = .ILLEGAL
@@ -205,7 +205,7 @@ lookup_identifier :: proc(ident: string) -> types.Token {
 	return .GO_ON
 	case "do":
 		return .DO
-	case "true", "false":
+	case "Bool":
 		return .BOOL
 	case "Int":
 		return .INT
@@ -285,7 +285,7 @@ get_current_token_literal :: proc(lexicon: ^types.Lexer) -> string {
 	case .FLOAT:
 		return "Float"
 	case .BOOL:
-		return "Boolean"
+		return "Bool"
 	case .NULL:
 		return "Null"
 	case:
