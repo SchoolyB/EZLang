@@ -59,11 +59,11 @@ parse_statement :: proc(p: ^types.Parser) -> ^types.Statement {
 	case .DO:
 		// fmt.println("p: ", p) //debugging
 		return parse_function_declaration(p)
-	case .INT, .STRING, .FLOAT, .BOOL, .NULL, .EQUALS:
+	case .INT, .STRING, .FLOAT, .BOOL, .NULL:
 		// fmt.println("p: ", p) //debugging
-		if p.inFunction { 	//only here becuase functions can have a return type in its declaration
+		// if p.inFunction {
 			return parse_variable_declaration(p)
-		}
+		// }
 	case .CONST:
 		return parse_constant_declaration(p)
 	case .NOW:
@@ -131,28 +131,30 @@ parse_variable_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 	stmt.token = parser.currentToken
 	stmt.isConst = false
 
-	// Handle type-first declarations
-	if parser.currentToken == .INT ||
-	   parser.currentToken == .STRING ||
-	   parser.currentToken == .FLOAT ||
-	   parser.currentToken == .BOOL {
+	// Check for explicit type
+	#partial switch (parser.currentToken) {
+	case .INT, .STRING, .FLOAT, .BOOL, .NULL:
 		stmt.type = lexer.get_type_name(parser.currentToken)
 		parser.currentToken = lexer.next_token(parser.lexicon)
-		fmt.printf("DEBUG: After type token, current token is: %v\n", parser.currentToken)
+		break
+	case:
+		// Default case assumes the type is implied
+		// Dont really need this case here but I think it helps understand whats happening - Marshall
+	}
 
-		// After type, expect identifier
-		if parser.currentToken != .IDENTIFIER {
-			fmt.printf("Error: Expected identifier after type, got %v\n", parser.currentToken)
-			return nil
-		}
+	if parser.currentToken != .IDENTIFIER {
+		utils.show_critical_error(fmt.tprintf("Expected identifier in variabel declartion got %v", parser.currentToken))
+		return nil
+	}
 
+	   //Setting the variables name
 		stmt.name = lexer.get_identifier_name(parser.lexicon)
 		parser.currentToken = lexer.next_token(parser.lexicon)
-		fmt.printf("DEBUG: After identifierk, current token is: %v\n", parser.currentToken)
+
 
 		// Expect = or ;
 		if parser.currentToken !=  .EQUALS && parser.currentToken != .SEMICOLON{
-			fmt.printf("Error: Expected '=' after identifier, got %v\n", parser.currentToken)
+			utils.show_critical_error(fmt.tprintf("Expected '=' after identifier, got %v\n", parser.currentToken))
 			return nil
 		}
 
@@ -161,11 +163,9 @@ parse_variable_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 			parser.currentToken = lexer.next_token(parser.lexicon)
 		}
 
-		return stmt
-	}
+fmt.println(stmt)
 
-	fmt.printf("Error: Expected type declaration, got %v\n", parser.currentToken)
-	return nil
+	return stmt
 }
 
 //handles parsing constant declarations with/without explicit types.
@@ -183,15 +183,16 @@ parse_constant_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 		parser.currentToken = lexer.next_token(parser.lexicon)
 		break
 	case:
-		//Default case assumes the type is implied
+		// Default case assumes the type is implied
 		// Dont really need this case here but I think it helps understand whats happening - Marshall
 	}
 
 	if parser.currentToken != .IDENTIFIER {
-		utils.show_critical_error(fmt.tprintf("Expected identifier after 'CONST', got %v", parser.currentToken))
+		utils.show_critical_error(fmt.tprintf("Expected identifier in constant declaration got %v", parser.currentToken))
 		return nil
 	}
 
+	//Setting the constant variables name
 	stmt.name = lexer.get_identifier_name(parser.lexicon) // Get identifier name
 	parser.currentToken = lexer.next_token(parser.lexicon) // Consume identifier
 
@@ -208,10 +209,18 @@ parse_constant_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 	//Parse the expression that is assigned to the constant
 	stmt.value = parse_expression(parser)
 	   if stmt.value == nil {
-			fmt.println("Error: Invalid expression in constant declaration")
+			utils.show_critical_error("Invalid expression in constant declaration")
 			fmt.println("Its possible there is no value assigned to constant declaration")
 			return nil
 	   }
+
+
+	//Check for semicolon then consume it or return nil
+	if semicolon_ends_statement(parser.currentToken){
+	   parser.currentToken = lexer.next_token(parser.lexicon)
+	}else{
+	   return nil
+	}
 
 	return stmt
 }
@@ -261,7 +270,6 @@ parse_reassignment_statement :: proc(parser: ^types.Parser) -> ^types.Statement 
 	if parser.currentToken == .SEMICOLON {
 		parser.currentToken = lexer.next_token(parser.lexicon)
 	}
-
 	return stmt
 }
 
@@ -446,11 +454,10 @@ parse_string_literal :: proc(parser: ^types.Parser) -> ^types.Expression {
 
 
 //Parser Helper functions
-check_statement_ends_with_semicolon :: proc(t: types.Token) -> i32 {
-    fmt.println("t: ", t)
-	   if t != .SEMICOLON{
-				fmt.println("ERROR: Statement must end in a semicolon!")
-				return -1
+semicolon_ends_statement :: proc(tok: types.Token) -> bool {
+	   if tok != .SEMICOLON{
+				utils.show_critical_error("Statement must end in a semicolon")
+				return false
 		}
-		return 0
+		return true
 	}
