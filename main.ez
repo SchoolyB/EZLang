@@ -1,6 +1,1 @@
-do add(Number a, Number b) >>> Number {
-
-    Number c = a + b;
-
-    return c;
-}
+const Number X = 1;

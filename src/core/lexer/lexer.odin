@@ -97,7 +97,7 @@ next_token :: proc(lexicon: ^types.Lexer) -> types.Token {
 	case '}':
 		token = .RCBRACE
 	case '(':
-		token = .LPAREN //todo: need to fix function declaration naming. lparen does currently only works when there is a space between the function name and the parenthesis
+		token = .LPAREN 
 	case ')':
 		token = .RPAREN
 	case '[':
@@ -126,7 +126,11 @@ next_token :: proc(lexicon: ^types.Lexer) -> types.Token {
 		}
 	}
 
-	read_char(lexicon)
+	// Don't advance the character here if we've already advanced in read_identifier
+	if token != .IDENTIFIER && token != .NUMBER && token != .STRING {
+		read_char(lexicon)
+	}
+	
 	lexicon.lastToken = token
 	return token
 }
@@ -137,6 +141,9 @@ read_identifier :: proc(lexicon: ^types.Lexer) -> string {
 	for lexicon.position < len(lexicon.input) && (is_letter(lexicon.currentChar) || is_digit(lexicon.currentChar)) {
 		read_char(lexicon)
 	}
+	
+	// Don't advance past special characters like semicolons
+	// This ensures we don't consume the semicolon as part of the identifier
 	return lexicon.input[start_position:lexicon.position]
 }
 
