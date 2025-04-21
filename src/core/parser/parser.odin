@@ -76,7 +76,6 @@ parse_program :: proc(p: ^types.Parser) -> ^types.Program {
 }
 //parses a statement
 parse_statement :: proc(p: ^types.Parser) -> ^types.Statement {
-    fmt.println("p.currentToken: ",p.currentToken)
 	#partial switch p.currentToken {
 	case .DO:
 		return parse_function_declaration(p)
@@ -140,7 +139,6 @@ parse_primary_expression :: proc(parser: ^types.Parser) -> ^types.Expression {
 	   return parse_boolean_literal(parser)
 	case .IDENTIFIER:
 		return parse_identifier(parser)
-
 	case:
 		// Handle error: unexpected token
 		return nil
@@ -304,26 +302,27 @@ parse_constant_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 	}else{
 	   return nil
 	}
-
 	return stmt
 }
 
 //used for variable re-assignment
 parse_reassignment_statement :: proc(parser: ^types.Parser) -> ^types.Statement {
-	// Implementation here
 	stmt := new(types.VariableDeclaration)
 	stmt.token = parser.currentToken
 	if stmt.isConst {
-		fmt.println("Error: Cannot reassign a constant")
+	    utils.show_critical_error("Cannot reassign a constant", #procedure)
 		return nil
 	}
+
 	parser.currentToken = lexer.next_token(parser.lexicon) // Consume 'NOW' token
 
 	#partial switch parser.currentToken {
 	// Check for explicit type
 	case .STRING, .INT, .FLOAT, .BOOL, .NULL:
 		//consume the type token
+		utils.show_warning("Cannot cast type to variable when re-assigning")
 		parser.currentToken = lexer.next_token(parser.lexicon)
+		return nil
 	case:
 	//implicitly types the identifier
 	// do nothing
