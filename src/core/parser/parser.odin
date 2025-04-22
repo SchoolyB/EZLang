@@ -57,7 +57,6 @@ parse_program :: proc(p: ^types.Parser) -> ^types.Program {
 	program := new(types.Program)
 	program.statements = make([dynamic]^types.Statement)
 
-	// fmt.println("DEBUG: Starting program parse") //debugging
 	for p.currentToken != .EOF {
 		stmt := parse_statement(p)
 		defer free(stmt)
@@ -76,6 +75,7 @@ parse_program :: proc(p: ^types.Parser) -> ^types.Program {
 }
 //parses a statement
 parse_statement :: proc(p: ^types.Parser) -> ^types.Statement {
+	fmt.println(p.lexicon.lastIdentifier)
 	#partial switch p.currentToken {
 	case .DO:
 		return parse_function_declaration(p)
@@ -94,6 +94,10 @@ parse_statement :: proc(p: ^types.Parser) -> ^types.Statement {
 	case .WHILE:
 		return parse_while_statement(p)
 	case .IDENTIFIER:
+		if p.lexicon.lastIdentifier == "now" { //Hacky fucking bullshit because 'now' keyword isnt being recognized
+			// Handle reassignment statemen
+			return parse_reassignment_statement(p)
+		}
 		// Handle implicit variable declarations (e.g., name = "Marshall";)
 		return parse_implicit_variable_declaration(p)
 	case:
@@ -260,17 +264,6 @@ parse_constant_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 	stmt.isConst = true
 	parser.currentToken = lexer.next_token(parser.lexicon) // Consume 'CONST' token
 
-	// Check for explicit type
-	#partial switch (parser.currentToken) {
-	case .INT, .STRING, .FLOAT, .BOOL, .NULL:
-		stmt.type = lexer.get_type_name(parser.currentToken)
-		parser.currentToken = lexer.next_token(parser.lexicon)
-		break
-	case:
-		// Default case assumes the type is implied
-		// Dont really need this case here but I think it helps understand whats happening - Marshall
-	}
-
 	if parser.currentToken != .IDENTIFIER {
 		utils.show_critical_error(fmt.tprintf("Expected identifier in constant declaration got %v", parser.currentToken),#procedure)
 		return nil
@@ -310,16 +303,24 @@ parse_constant_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 
 //used for variable re-assignment
 parse_reassignment_statement :: proc(parser: ^types.Parser) -> ^types.Statement {
-	stmt := new(types.VariableDeclaration)
-	stmt.token = parser.currentToken
-	if stmt.isConst {
-	    utils.show_critical_error("Cannot reassign a constant", #procedure)
-		return nil
-	}
+    fmt.println("!!!!! PARSING REASSIGNMENT STATEMENT !!!!!")  // Very visible debug print
+    stmt := new(types.ReassignmentStatement)
+    stmt.token = parser.currentToken // NOW token
+	fmt.println("first token found: ", stmt.token) //debugging
+    // Consume 'NOW' token to start the reassignment statement
+    parser.currentToken = lexer.next_token(parser.lexicon) // Consume 'NOW' token
 
-	parser.currentToken = lexer.next_token(parser.lexicon) // Consume 'NOW' token
+    // Check if the current token is an identifier
+    if parser.currentToken != .IDENTIFIER {
+        utils.show_critical_error(fmt.tprintf("Expected identifier after 'NOW', got %v", parser.currentToken), #procedure)
+        return nil
+    }
 
-	#partial switch parser.currentToken {
+    // Get the identifier name
+    stmt.name = lexer.get_identifier_name(parser.lexicon)
+    parser.currentToken = lexer.next_token(parser.lexicon) // Consume identifier
+
+    #partial switch parser.currentToken {
 	// Check for explicit type
 	case .STRING, .INT, .FLOAT, .BOOL, .NULL:
 		//consume the type token
@@ -331,31 +332,29 @@ parse_reassignment_statement :: proc(parser: ^types.Parser) -> ^types.Statement 
 	// do nothing
 	}
 
-	if parser.currentToken != .IDENTIFIER {
-		fmt.printf("Error: Expected identifier after 'NOW', got %v\n", parser.currentToken)
-		return nil
-	}
 
-	stmt.name = lexer.get_identifier_name(parser.lexicon) // Get identifier name
-	parser.currentToken = lexer.next_token(parser.lexicon) // Consume identifier
+    // Check for equals sign
+    if parser.currentToken != .EQUALS {
+        utils.show_critical_error(fmt.tprintf("Expected '=' after identifier, got %v", parser.currentToken), #procedure)
+        return nil
+    }
 
-	if parser.currentToken != .EQUALS {
-		fmt.printf("Error: Expected 'IS' after identifier, got %v\n", parser.currentToken)
-		return nil
-	}
-	parser.currentToken = lexer.next_token(parser.lexicon) // Consume 'IS' token
+    parser.currentToken = lexer.next_token(parser.lexicon) // Consume equals token
 
-	stmt.value = parse_expression(parser)
-	if stmt.value == nil {
-		fmt.println("Error: Invalid expression in reassignment statement")
-		return nil
-	}
+    // Parse the expression
+    stmt.value = parse_expression(parser)
+    if stmt.value == nil {
+        utils.show_critical_error("Invalid expression in reassignment statement", #procedure)
+        return nil
+    }
 
-	// Check for semicolon in current token or peek token
-	if parser.currentToken == .SEMICOLON {
-		parser.currentToken = lexer.next_token(parser.lexicon)
-	}
-	return stmt
+    // Check for semicolon
+    if !semicolon_ends_statement(parser.currentToken) {
+        return nil
+    }
+
+    parser.currentToken = lexer.next_token(parser.lexicon) // Consume semicolon
+    return stmt
 }
 
 
@@ -496,9 +495,9 @@ parse_return_statement :: proc(parser: ^types.Parser) -> ^types.Statement {
         utils.show_critical_error("Return statement outside of function", #procedure)
         return nil
     }
-    
+
     parser.currentToken = lexer.next_token(parser.lexicon) // consume RETURN token
-    
+
     // Parse the return value expression if there is one
     if parser.currentToken != .SEMICOLON {
         expr := parse_expression(parser)
@@ -512,12 +511,12 @@ parse_return_statement :: proc(parser: ^types.Parser) -> ^types.Statement {
             return nil
         }
     }
-    
+
     // Check for semicolon
     if !semicolon_ends_statement(parser.currentToken) {
         return nil
     }
-    
+
     parser.currentToken = lexer.next_token(parser.lexicon) // Consume semicolon
     return stmt
 }
