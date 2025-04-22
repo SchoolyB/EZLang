@@ -28,6 +28,7 @@ Token :: enum {
 	//keywords
 	EQUALS,
 	CONST, //used to declare a constant variable
+	INFER, //implicit variabel declaration
 	NOW, //used to re-assign a variables value
 	PLUS, //+
 	MINUS, //-

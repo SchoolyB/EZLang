@@ -171,10 +171,6 @@ read_identifier :: proc(lexicon: ^types.Lexer) -> string {
 
 //Looks up the keyword in the input string
 lookup_identifier :: proc(ident: string) -> types.Token {
-	if ident == "now" {
-        return .NOW //For whatever reason, the 'now' keyword is not being recognized as a keyword. so have to do this hacky shit. - Marshall
-    }
-
 	using types
 	switch ident {
 	case ";":
@@ -185,6 +181,10 @@ lookup_identifier :: proc(ident: string) -> types.Token {
 		return .EQUALS
 	case "const":
 		return .CONST
+	case "infer":
+	   return .INFER
+	case "now":
+	   return .NOW
 	case "+":
 		return .PLUS
 	case "-":
@@ -269,10 +269,12 @@ get_current_token_literal :: proc(lexicon: ^types.Lexer) -> string {
 		return lexicon.lastIdentifier
 	case .CONST:
 		return "const"
-	case .EQUALS:
-		return "="
+	case .INFER:
+	   return "infer"
 	case .NOW:
 		return "now"
+	case .EQUALS:
+		return "="
 	case .DO:
 		return "do"
 	case .RETURNS:

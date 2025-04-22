@@ -93,13 +93,8 @@ parse_statement :: proc(p: ^types.Parser) -> ^types.Statement {
 		return parse_if_statement(p)
 	case .WHILE:
 		return parse_while_statement(p)
-	case .IDENTIFIER:
-		if p.lexicon.lastIdentifier == "now" { //Hacky fucking bullshit because 'now' keyword isnt being recognized
-			// Handle reassignment statemen
-			return parse_reassignment_statement(p)
-		}
-		// Handle implicit variable declarations (e.g., name = "Marshall";)
-		return parse_implicit_variable_declaration(p)
+	case .INFER:
+	   return parse_implicit_variable_declaration(p)
 	case:
 	       utils.show_critical_error(fmt.tprintf("Invalid token found in statement: Got token: %v", p.currentToken),#procedure)
 			break
@@ -220,15 +215,16 @@ parse_explicit_variable_declaration :: proc(parser: ^types.Parser) -> ^types.Sta
 	return stmt
 }
 
-// Handles parsing of implicit variable declarations (e.g., name = "Marshall";)
+// Handles parsing of implicit variable declarations (e.g., infer name = "Marshall";)
 parse_implicit_variable_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 	stmt := new(types.VariableDeclaration)
 	stmt.token = parser.currentToken
+	parser.currentToken = lexer.next_token(parser.lexicon) //consume INFER token
 	stmt.isConst = false
 
 	// Save the identifier name
 	stmt.name = lexer.get_identifier_name(parser.lexicon)
-	parser.currentToken = lexer.next_token(parser.lexicon)
+	parser.currentToken = lexer.next_token(parser.lexicon) //consume IDENTIFIER
 
 	// Expect equals sign
 	if parser.currentToken != .EQUALS {
