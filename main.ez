@@ -1,1 +1,17 @@
-Bool isProgrammer = true;
+Int age = 29;
+now age = 100;
+
+do create_constant_variable(){
+    const X = 100;
+}
+
+do reassign_variables() {
+    name = "John";
+    Now name = "Mark";
+}
+
+do pass_parameters_and_return(Int X, Int Y) >>> Int {
+    Int Z = X + Y;
+    return Z;
+}
+
