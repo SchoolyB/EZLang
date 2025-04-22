@@ -19,9 +19,9 @@ A programming language designed to be accessible for programmers of all levels.
 ## 3. Variable Declaration and Assignment
 ### Variable Declaration
 ```
-// Implicit typing
-`name = "John";`
-`age = 21;`
+// Implicit typing must use the 'infer' keyword
+`infer name = "John";`
+`infer age = 21;`
 
 Note: When defining a variable but not assigning a value, you MUST explicitly define its type.
 Example" `String name;`
@@ -185,20 +185,19 @@ result, _ = function_name(21, "John");
 
 ## 7. Example Program
 ```
-#import "ez:std"
-#import "ez:io"
+infer a = 5; //Implicit variable declaration
+Int b = 10; //explicit variable declaration
 
-Int a = 5; //Global variable declaration and assignment
-Int b = 10;
 
-do add(Int x, Int y) returns Int {
+//function with params and return type/value
+do add(Int x, Int y) >>> Int {
     Int total = x + y;
     return total;
 }
 
-do main() returns Int {
-    result = std.add(a, b); //accessing a function from the std module
-    io.display(result);  // output: 20     //accessing a function from the io module
+do main() >>> Int {
+    result = add(a, b);
+    display(result);  // output: 20     //accessing a function from the proposed io module
     return result;
 }
 
