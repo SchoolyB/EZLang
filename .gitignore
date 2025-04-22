@@ -3,4 +3,7 @@
 *.exe
 *.out
 ols.json
-main.bin
+*bin
+*.so
+*.o
+.*exe
