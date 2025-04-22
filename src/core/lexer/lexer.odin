@@ -175,6 +175,8 @@ lookup_identifier :: proc(ident: string) -> types.Token {
 	switch ident {
 	case ";":
 	   return .SEMICOLON
+	case ",":
+	   return .COMMA
 	case "=":
 		return .EQUALS
 	case "const":
@@ -299,6 +301,8 @@ get_current_token_literal :: proc(lexicon: ^types.Lexer) -> string {
 	   return "["
 	case .SEMICOLON:
 	return ";"
+	case .COMMA:
+	return ","
 	// Add type tokens
 	case .INT:
 		return "Int"

@@ -83,9 +83,8 @@ parse_statement :: proc(p: ^types.Parser) -> ^types.Statement {
 		// if p.inFunction {
 			return parse_explicit_variable_declaration(p)
 		// }
-	case .IDENTIFIER:
-		// Handle implicit variable declarations (e.g., name = "Marshall";)
-		return parse_implicit_variable_declaration(p)
+	case .RETURN:
+		return parse_return_statement(p)
 	case .CONST:
 		return parse_constant_declaration(p)
 	case .NOW:
@@ -94,8 +93,12 @@ parse_statement :: proc(p: ^types.Parser) -> ^types.Statement {
 		return parse_if_statement(p)
 	case .WHILE:
 		return parse_while_statement(p)
+	case .IDENTIFIER:
+		// Handle implicit variable declarations (e.g., name = "Marshall";)
+		return parse_implicit_variable_declaration(p)
 	case:
 	       utils.show_critical_error(fmt.tprintf("Invalid token found in statement: Got token: %v", p.currentToken),#procedure)
+			break
 	}
 	return nil
 }
@@ -367,8 +370,6 @@ parse_function_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 		return nil
 	}
 	stmt.name = lexer.get_identifier_name(parser.lexicon)
-	// fmt.println(stmt.name) //debugging
-	// fmt.println("parser.currentToken2: ", parser.currentToken) //debugging
 	parser.currentToken = lexer.next_token(parser.lexicon)
 
 	// Check if we need to look ahead for a left parenthesis without a space
@@ -385,11 +386,8 @@ parse_function_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 			defer delete(stmt.parameters)
 	    }
 
-	    if parser.currentToken == .RPAREN {
-	        parser.currentToken = lexer.next_token(parser.lexicon) // consume )
-	    } else {
-	        fmt.printf("Error: Expected ')' after parameter list, got %v\n", parser.currentToken)
-	        return nil
+	        if parser.currentToken == .RPAREN {
+	           parser.currentToken = lexer.next_token(parser.lexicon) // consume )
 	    }
 	}
 
@@ -401,46 +399,51 @@ parse_function_declaration :: proc(parser: ^types.Parser) -> ^types.Statement {
 		#partial switch parser.currentToken {
 		case .INT, .STRING, .FLOAT, .BOOL, .NULL:
 			stmt.returnStatment.type = lexer.get_type_name(parser.currentToken)
-			parser.currentToken = lexer.next_token(parser.lexicon)
+			stmt.returnStatment.type = lexer.get_current_token_literal(parser.lexicon)
+			parser.currentToken = lexer.next_token(parser.lexicon) //consume type token
+			break
 		case:
-			fmt.printf(
-				"Error: Expected return type after 'returns', got %v\n",
-				parser.currentToken,
-			)
+		  utils.show_critical_error("Expected return type after '>>>' ", #procedure)
 			return nil
 		}
 	}
 
 	// Parse function body
-	parser.currentToken = lexer.next_token(parser.lexicon)
 	if parser.currentToken != .LCBRACE {
-		fmt.printf(
-			"Error: Expected ')' after function declaration, got %v\n",
-			parser.currentToken,
-		)
+	   utils.show_critical_error("Expected '{' after function declaration", #procedure)
 		return nil
 	}
+
 	parser.inFunction = true
 	parser.currentToken = lexer.next_token(parser.lexicon) // consume {
 
 	// Parse statements in function body
-	body_statements := make([dynamic]^types.BlockStatement)
+	functionBodyStatements := make([dynamic]^types.BlockStatement)
 	for parser.currentToken != .RCBRACE && parser.currentToken != .EOF {
 		stmt := parse_statement(parser)
 		if stmt != nil {
 			// Create a new BlockStatement to wrap the regular statement
-			block_stmt := new(types.BlockStatement)
-			block_stmt.statements = make([dynamic]^types.Statement)
-			append(&block_stmt.statements, stmt)
-			append(&body_statements, block_stmt)
+			blockStmt := new(types.BlockStatement)
+			blockStmt.statements = make([dynamic]^types.Statement)
+			append(&blockStmt.statements, stmt)
+			append(&functionBodyStatements, blockStmt)
+		}else{
+		return nil
 		}
 	}
+
+	//Check for and consume return value
+	if parser.currentToken == .RETURN {
+	   fmt.println("HERE")
+	}
+
+
 	parser.inFunction = false
 	if parser.currentToken == .RCBRACE {
 		parser.currentToken = lexer.next_token(parser.lexicon) // consume }
 	}
 
-	stmt.body = body_statements[:]
+	stmt.body = functionBodyStatements[:]
 	return stmt
 }
 
@@ -487,7 +490,36 @@ parse_parameter_list :: proc(parser: ^types.Parser) -> [dynamic]^types.Parameter
 }
 
 parse_return_statement :: proc(parser: ^types.Parser) -> ^types.Statement {
-	return nil
+    stmt := new(types.ReturnStatement)
+    stmt.token = parser.currentToken // RETURN token
+    if !parser.inFunction {
+        utils.show_critical_error("Return statement outside of function", #procedure)
+        return nil
+    }
+    
+    parser.currentToken = lexer.next_token(parser.lexicon) // consume RETURN token
+    
+    // Parse the return value expression if there is one
+    if parser.currentToken != .SEMICOLON {
+        expr := parse_expression(parser)
+        if expr != nil {
+            if stmt.value == nil {
+                stmt.value = make([]^types.Expression, 1)
+                stmt.value[0] = expr
+            }
+        } else {
+            utils.show_critical_error("Invalid expression in return statement", #procedure)
+            return nil
+        }
+    }
+    
+    // Check for semicolon
+    if !semicolon_ends_statement(parser.currentToken) {
+        return nil
+    }
+    
+    parser.currentToken = lexer.next_token(parser.lexicon) // Consume semicolon
+    return stmt
 }
 
 parse_function_call :: proc(parser: ^types.Parser) -> ^types.Statement {
